@@ -1,9 +1,10 @@
-import React from 'react'
+import React, {useRef, useEffect} from 'react'
 import {
     AppBar,
     TextField,
     Link,
     IconButton,
+    
   } from "@mui/material";
 import { Box } from "@mui/system";
 import SearchIcon from "@mui/icons-material/Search";
@@ -15,14 +16,17 @@ interface Props {
 }
 
 const Header = ({drawerWidth, setShowMobile} : Props) => {
+    const appBarRef = useRef<HTMLDivElement>(null)
     return(
         <AppBar
-        position="fixed"
+        position="sticky"
         sx={{
           width: { xs: "100%", lg: `calc(100% - ${drawerWidth}px)` },
           ml: { xs: "0", lg: `${drawerWidth}px` },
         }}
+        ref={appBarRef}
       >
+        
         <Box
           sx={{
             background: "#00040F",

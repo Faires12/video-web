@@ -23,6 +23,7 @@ const DrawerContent = () => {
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        fontWeight: 'normal'
       }}
     >
       <Box component="img" src="/logo.png" sx={{ padding: "20px" }} />
@@ -64,41 +65,49 @@ const DrawerContent = () => {
   );
 };
 
-const LeftPanel = () => {
-  const [showMobile, setShowMobile] = useState(false);
-  const drawerWidth = 200;
+interface Props{
+  drawerWidth: number
+}
 
+const LeftPanel = ({drawerWidth}: Props) => {
+  const [showMobile, setShowMobile] = useState(false);
+  
   return (
     <>
       <Header drawerWidth={drawerWidth} setShowMobile={setShowMobile}/>
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={showMobile}
-        onClose={() => setShowMobile(false)}
-        PaperProps={{
-          sx: {
-            border: "none",
-            width: drawerWidth,
-            display: { xs: "block", lg: "none" },
-          },
-        }}
-      >
-        <DrawerContent />
-      </Drawer>
-      <Drawer
-        variant="permanent"
-        anchor="left"
-        PaperProps={{
-          sx: {
-            border: "none",
-            width: drawerWidth,
-            display: { xs: "none", lg: "block" },
-          },
-        }}
-      >
-        <DrawerContent />
-      </Drawer>
+      <Box>
+        <Drawer
+          variant="temporary"
+          anchor="left"
+          open={showMobile}
+          onClose={() => setShowMobile(false)}
+          PaperProps={{
+            sx: {
+              border: "none",
+              width: drawerWidth,
+              display: { xs: "block", lg: "none" },
+            },
+          }}
+        >
+          <DrawerContent />
+        </Drawer>
+        <Drawer
+          variant="permanent"
+          anchor="left"
+          PaperProps={{
+            sx: {
+              border: "none",
+              width: drawerWidth,
+              display: { xs: "none", lg: "block" },
+            },
+          }}
+          ModalProps={{
+            keepMounted: true,
+          }}
+        >
+          <DrawerContent />
+        </Drawer>
+      </Box>
     </>
   );
 };
