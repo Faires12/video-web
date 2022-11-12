@@ -4,6 +4,7 @@ export interface UserData{
     email: string
     avatar: string
     name: string
+    subsCount?: number
 }
 
 export async function GetLoggedUserData() : Promise<UserData>{

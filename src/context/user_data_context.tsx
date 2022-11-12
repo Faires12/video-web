@@ -1,4 +1,5 @@
 import React, {useContext, createContext, useState, Dispatch, SetStateAction, useEffect} from 'react'
+import { useLocation } from 'react-router-dom'
 import { doLogout, isLogged } from '../services/auth'
 import { GetLoggedUserData, UserData } from '../services/user'
 import { useLoading } from './loading_context'
@@ -26,10 +27,11 @@ export const UserDataProvider = ({children}: Props) => {
     const [userData, setUserData] = useState<Partial<UserData>>({})
     const snack = useSnack()
     const loading = useLoading()
+    const location = useLocation()
 
     useEffect(() => {
         getUserData()
-    }, [])
+    }, [location.pathname])
 
     const getUserData = async () => {
         if(!isLogged())

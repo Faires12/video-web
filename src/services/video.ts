@@ -1,13 +1,9 @@
 import { get } from "./generic";
+import { UserData } from "./user";
 
 export interface VideoData{
     createdAt: Date
-    created_by: {
-        avatar: string
-        email: string
-        name: string
-        subsCount: number
-    }
+    created_by: UserData
     description?: string
     deslikesCount: number
     likesCount: number
@@ -16,6 +12,8 @@ export interface VideoData{
     thumbnail: string
     title: string
     viewsCount: number
+    commentCount: number
+    evaluation?: boolean | null
 }
 
 export async function getVideo(id: number) : Promise<VideoData>{
