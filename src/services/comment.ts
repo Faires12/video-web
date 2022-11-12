@@ -15,18 +15,35 @@ export interface Comment{
 
 export async function GetVideoComments(videoId: number, page: number, rows: number) : Promise<Comment[]>{
     try {
-        const userData = await get(`/video/comments/${videoId}?page=${page}&rows=${rows}`)
-        return userData
+        const comments = await get(`/video/comments/${videoId}?page=${page}&rows=${rows}`)
+        return comments
     } catch (error) {
         throw error
     }
 }
 
+export async function GetCommentResponses(commentId: number, page: number, rows: number) : Promise<Comment[]>{
+    try {
+        const comments = await get(`/video/comments/responses/${commentId}?page=${page}&rows=${rows}`)
+        return comments
+    } catch (error) {
+        throw error
+    }
+}
 
 export async function GetComment(commentId: number) : Promise<Comment>{
     try {
-        const userData = await get(`/video/comment/${commentId}`)
-        return userData
+        const comment = await get(`/video/comment/${commentId}`)
+        return comment
+    } catch (error) {
+        throw error
+    }
+}
+
+export async function CreateVideoComment(videoId: number, content: string) : Promise<Comment>{
+    try {
+        const comment = await post(`/video/comment/`, {videoId, content})
+        return comment
     } catch (error) {
         throw error
     }
