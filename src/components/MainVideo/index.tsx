@@ -5,14 +5,31 @@ import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import { VideoData } from "../../services/video";
 import { maskDateInFull } from "../../utils";
+import { UserData } from "../../services/user";
 
 interface Props {
-  videoData: VideoData | undefined;
-  handleChangeEvaluation(isPositive: boolean): Promise<void>;
+  videoUrl: string
+  description?: string
+  title: string
+  createdBy: Partial<UserData>
+  viewsCount: number
+  likesCount: number
+  deslikesCount: number
+  evaluation?: boolean | null
+  createdAt: Date
+  handleChangeEvaluation?(isPositive: boolean): Promise<void>;
 }
 
 export const MainVideo = ({
-  videoData,
+  videoUrl,
+  description,
+  title,
+  createdBy,
+  viewsCount,
+  likesCount,
+  deslikesCount,
+  evaluation,
+  createdAt,
   handleChangeEvaluation,
 }: Props) => {
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
@@ -21,9 +38,9 @@ export const MainVideo = ({
     <Box sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
       <Box
         component="video"
-        src={`${baseUrl}/${videoData?.path}`}
+        src={videoUrl}
         controls
-        sx={{ width: "90%", borderRadius: "20px" }}
+        sx={{ width: "90%", borderRadius: "20px", maxHeight: '500px'}}
       />
       <Box
         sx={{
@@ -34,9 +51,9 @@ export const MainVideo = ({
           mt: "10px",
         }}
       >
-        <Typography sx={{ fontSize: "20px" }}>{videoData?.title}</Typography>
+        <Typography sx={{ fontSize: "20px" }}>{title}</Typography>
         <Typography sx={{ color: "#808191", fontSize: "14px" }}>
-          {videoData?.viewsCount} views • {maskDateInFull(videoData?.createdAt)}
+          {viewsCount} views • {maskDateInFull(createdAt)}
         </Typography>
       </Box>
       <Box
@@ -51,7 +68,7 @@ export const MainVideo = ({
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <Box
             component="img"
-            src={`${baseUrl}/${videoData?.created_by.avatar}`}
+            src={`${baseUrl}/${createdBy.avatar}`}
             sx={{ width: "40px", height: "40px", borderRadius: "50%" }}
           />
           <Box
@@ -63,12 +80,12 @@ export const MainVideo = ({
             }}
           >
             <Typography sx={{ color: "#CFD1D2", fontSize: "14px" }}>
-              {videoData?.created_by.name}
+              {createdBy.name}
             </Typography>
             <Typography
               sx={{ color: "rgba(183, 185, 210, 0.7)", fontSize: "14px" }}
             >
-              {videoData?.created_by.subsCount} Followers
+              {createdBy.subsCount} Followers
             </Typography>
           </Box>
           <Button
@@ -91,23 +108,23 @@ export const MainVideo = ({
         </Box>
         <Box sx={{ color: "#80819", fontSize: "12px" }}>
           <Box sx={{ display: "flex", alignItems: "flex-end" }}>
-            <Box sx={{ mr: "15px" }}>{videoData?.likesCount}</Box>
+            <Box sx={{ mr: "15px" }}>{likesCount}</Box>
             <ThumbUpIcon
-              sx={{ color: videoData?.evaluation ? "blue" : "#80819", cursor: 'pointer' }}
-              onClick={() => handleChangeEvaluation(true)}
+              sx={{ color: evaluation ? "blue" : "#80819", cursor: 'pointer' }}
+              onClick={() => handleChangeEvaluation && handleChangeEvaluation(true)}
             />
           </Box>
           <Box sx={{ display: "flex", alignItems: "flex-end", mt: "5px" }}>
-            <Box sx={{ mr: "15px" }}>{videoData?.deslikesCount}</Box>
+            <Box sx={{ mr: "15px" }}>{deslikesCount}</Box>
             <ThumbDownIcon
-              sx={{ color: videoData?.evaluation === false ? "blue" : "#80819", cursor: 'pointer' }}
-              onClick={() => handleChangeEvaluation(false)}
+              sx={{ color: evaluation === false ? "blue" : "#80819", cursor: 'pointer' }}
+              onClick={() => handleChangeEvaluation && handleChangeEvaluation(false)}
             />
           </Box>
         </Box>
       </Box>
       <Typography sx={{ mt: "30px", color: "#808191", fontSize: "13px" }}>
-        {videoData?.description}
+        {description}
       </Typography>
     </Box>
   );

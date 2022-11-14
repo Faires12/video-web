@@ -1,9 +1,9 @@
 import axios from 'axios'
 
-function getInstance() {
+function getInstance(multipart?: boolean) {
     const baseURL = process.env.REACT_APP_API_ENDPOINT
     const headers = {
-        'Content-Type': 'application/json',
+        'Content-Type': !multipart ? 'application/json' : 'multipart/form-data',
         token: localStorage.getItem("token")
     }
 
@@ -23,9 +23,9 @@ export async function get(endpoint: string){
     }
 }
 
-export async function post(endpoint: string, body: any){
+export async function post(endpoint: string, body: any, multipart?: boolean){
     try {
-        const axios = getInstance()
+        const axios = getInstance(multipart)
         const res = await axios.post(endpoint, body)
         return res.data
     } catch (error: any) {

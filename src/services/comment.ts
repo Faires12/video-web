@@ -48,3 +48,12 @@ export async function CreateVideoComment(videoId: number, content: string) : Pro
         throw error
     }
 }
+
+export async function CreateVideoCommentResponse(commentId: number, content: string) : Promise<Comment>{
+    try {
+        const comment = await post(`/video/comment/response`, {commentId, content})
+        return comment
+    } catch (error) {
+        throw error
+    }
+}

@@ -33,6 +33,7 @@ const Header = ({ drawerWidth, setShowMobile }: Props) => {
     doLogout()
     setUserData({})
     handleClose()
+    window.location.reload()
   }
 
   return (

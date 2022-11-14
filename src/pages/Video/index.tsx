@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Box } from "@mui/system";
-import { Typography, Button } from "@mui/material";
 import MainVideo from "../../components/MainVideo";
 import { getVideo, VideoData } from "../../services/video";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLoading } from "../../context/loading_context";
 import { useSnack } from "../../context/snack_context";
 import {
-  GetCommentEvaluation,
-  GetVideoEvaluation,
   PostCommentEvaluation,
   PostVideoEvaluation,
 } from "../../services/evaluation";
 import { isLogged } from "../../services/auth";
-import { Comment, CreateVideoComment, GetComment, GetCommentResponses, GetVideoComments } from "../../services/comment";
+import { Comment, CreateVideoComment, CreateVideoCommentResponse, GetComment, GetCommentResponses, GetVideoComments } from "../../services/comment";
 import { CommentSection } from "../../components/CommentSection";
 
 const Video = () => {
@@ -25,6 +22,8 @@ const Video = () => {
   const [commentsRows, setCommentsRows] = useState(10);
   const loading = useLoading();
   const snack = useSnack();
+
+  const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
 
   useEffect(() => {
     getVideoData();
@@ -67,9 +66,12 @@ const Video = () => {
         page,
         rows
       );
-      const c = [...comments]
-      c.push(...res)
-      setComments([...c]);
+      const newComments = [...comments]
+      for(const comment of res){
+        if(!newComments.find(c => c.id === comment.id))
+          newComments.push(comment)
+      }
+      setComments([...newComments]);
     } catch (error) {}
     loading.hide();
   };
@@ -106,8 +108,29 @@ const Video = () => {
     loading.show()
     try {
       const comment = await CreateVideoComment(Number(id), content)
+      await getVideoData()
       const newComments = [...comments];
       newComments.unshift(comment)
+      setComments([...newComments]);
+    } catch (error) {
+      
+    }
+    loading.hide()
+  }
+
+  const sendNewCommentResponse = async (commentId: number, content: string) => {
+    loading.show()
+    try {
+      const commentResponse = await CreateVideoCommentResponse(commentId, content)
+      const comment = await GetComment(commentId)
+      const newComments = [...comments];
+
+      const index = newComments.findIndex(c => c.id === commentId)
+      newComments[index].responses?.unshift(commentResponse)
+
+      comment.responses = newComments[index].responses
+      newComments[index] = comment
+      
       setComments([...newComments]);
     } catch (error) {
       
@@ -121,7 +144,12 @@ const Video = () => {
       const responses = await GetCommentResponses(commentId, page, 5)
       const newComments = [...comments];
       const index = newComments.findIndex(c => c.id === commentId)
-      newComments[index].responses?.push(...responses)
+
+      for(const response of responses){
+        if(!newComments[index].responses?.find(c => c.id === response.id))
+          newComments[index].responses?.push(response)
+      }
+      
       setComments([...newComments]);
     } catch (error) {
       
@@ -143,16 +171,25 @@ const Video = () => {
   return (
     <Box sx={{ width: "100%", display: "flex", pt: "20px", pl: "40px" }}>
       <Box sx={{ width: "70%" }}>
-        <MainVideo
-          videoData={videoData}
+        {videoData && <MainVideo
+          createdAt={videoData.createdAt}
+          createdBy={videoData.created_by}
+          deslikesCount={videoData.deslikesCount}
+          likesCount={videoData.likesCount}
+          videoUrl={`${baseUrl}/${videoData.path}`}
+          title={videoData.title}
+          viewsCount={videoData.viewsCount}
+          description={videoData.description}
+          evaluation={videoData.evaluation}
           handleChangeEvaluation={handleChangeEvaluation}
-        />
+        />}
         <CommentSection
           commentCount={videoData?.commentCount ?? 0}
           comments={comments}
           handleChangeCommentEvaluation={handleChangeCommentEvaluation}
           sendNewComment={sendNewComment}
           loadCommentResponses={loadCommentResponses}
+          sendNewCommentResponse={sendNewCommentResponse}
         />
       </Box>
     </Box>

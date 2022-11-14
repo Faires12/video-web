@@ -6,6 +6,7 @@ import { ModalProvider } from "./context/authentication_modal_context";
 import { LoadingProvider } from "./context/loading_context";
 import { SnackProvider } from "./context/snack_context";
 import { UserDataProvider } from "./context/user_data_context";
+import { Upload } from "./pages/Upload";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <Layout>
               <Routes>
                 <Route path="/video/:id" element={<Video />} />
+                <Route path="/upload" element={<Upload />} />
               </Routes>
             </Layout>
           </ModalProvider>

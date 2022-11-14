@@ -9,6 +9,7 @@ import { format } from "timeago.js";
 import { useLoading } from "../../context/loading_context";
 import { useUserData } from "../../context/user_data_context";
 import { useSnack } from "../../context/snack_context";
+import { UserData } from "../../services/user";
 
 interface CommentBoxProps {
   comment: Comment;
@@ -18,7 +19,8 @@ interface CommentBoxProps {
     isResponse: boolean,
     mainCommentId?: number
   ): Promise<void>;
-  loadCommentResponses(commentId: number, page: number): Promise<void>;
+  loadCommentResponses?(commentId: number, page: number): Promise<void>;
+  sendNewCommentResponse?(commentId: number, content: string): Promise<void>;
   isResponse: boolean;
   mainCommentId?: number;
 }
@@ -29,11 +31,31 @@ const CommentBox = ({
   loadCommentResponses,
   isResponse,
   mainCommentId,
+  sendNewCommentResponse,
 }: CommentBoxProps) => {
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
-  const loading = useLoading();
   const [page, setPage] = useState(1);
   const [hidden, setHidden] = useState(false);
+  const [responding, setResponding] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const snack = useSnack();
+  const { userData } = useUserData();
+
+  const keyPressEvent = async (e: any) => {
+    if (e.key === "Enter") {
+      if (newComment.length < 5) {
+        snack.error("The comment have to be at least 5 characteres");
+        return;
+      }
+      if (newComment.length > 200) {
+        snack.error("The comment can have 200 max");
+        return;
+      }
+      sendNewCommentResponse && sendNewCommentResponse(comment.id, newComment)
+      setNewComment("");
+      setResponding(false)
+    }
+  };
 
   return (
     <>
@@ -117,6 +139,7 @@ const CommentBox = ({
                       ml: "10px",
                       cursor: "pointer",
                     }}
+                    onClick={() => setResponding((prev) => !prev)}
                   >
                     Reply
                   </Typography>
@@ -148,14 +171,14 @@ const CommentBox = ({
                     comment.responses &&
                     comment.responses?.length === 0
                   ) {
-                    loadCommentResponses(comment.id, page);
+                    loadCommentResponses && loadCommentResponses(comment.id, page);
                     setPage((prevPage) => prevPage + 1);
                   } else if (
                     comment.commentCount > 0 &&
                     comment.responses &&
                     comment.responses?.length > 0
                   ) {
-                    setHidden((prevHidden) => !prevHidden)
+                    setHidden((prevHidden) => !prevHidden);
                   }
                 }}
               >
@@ -165,13 +188,22 @@ const CommentBox = ({
           )}
         </Box>
       </Box>
+      {responding && (
+        <Box sx={{ width: "100%", mt: "30px", ml: "30px" }}>
+          <NewCommentInput
+            keyPressEvent={keyPressEvent}
+            value={newComment}
+            setValue={setNewComment}
+            userData={userData}
+          />
+        </Box>
+      )}
       {!isResponse && !hidden && (
         <>
           {comment.responses?.map((c) => (
             <CommentBox
               comment={c}
               handleChangeCommentEvaluation={handleChangeCommentEvaluation}
-              loadCommentResponses={loadCommentResponses}
               isResponse={true}
               mainCommentId={comment.id}
             />
@@ -181,7 +213,7 @@ const CommentBox = ({
             comment.responses.length < comment.commentCount && (
               <Typography
                 onClick={() => {
-                  loadCommentResponses(comment.id, page);
+                  loadCommentResponses && loadCommentResponses(comment.id, page);
                   setPage((prevPage) => prevPage + 1);
                 }}
                 sx={{
@@ -201,6 +233,54 @@ const CommentBox = ({
   );
 };
 
+interface NewCommentInputProps {
+  userData: Partial<UserData>;
+  value: string;
+  setValue: React.Dispatch<React.SetStateAction<string>>;
+  keyPressEvent(e: any): void;
+}
+
+const NewCommentInput = ({
+  userData,
+  value,
+  setValue,
+  keyPressEvent,
+}: NewCommentInputProps) => {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center" }}>
+      <Box
+        component="img"
+        src={`${process.env.REACT_APP_MEDIA_ENDPOINT}/${userData.avatar}`}
+        sx={{ width: "40px", height: "40px", borderRadius: "50%" }}
+      />
+      <Box sx={{ ml: "20px", width: "100%" }}>
+        <Typography sx={{ color: "#CFD1D2" }}>{userData.name}</Typography>
+        <TextField
+          sx={{
+            border: "none",
+            borderBottom: "2px solid rgba(255, 255, 255, 0.05)",
+            input: { color: "#FFF", outline: "hidden" },
+            mt: "10px",
+            width: "70%",
+          }}
+          value={value}
+          onKeyDown={keyPressEvent}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Write an comment..."
+          inputProps={{
+            style: {
+              padding: 2,
+              fontSize: 13,
+              color: "#FFF",
+            },
+            maxLength: 200,
+          }}
+        />
+      </Box>
+    </Box>
+  );
+};
+
 interface Props {
   comments: Comment[];
   commentCount: number;
@@ -212,6 +292,7 @@ interface Props {
   ): Promise<void>;
   sendNewComment(content: string): Promise<void>;
   loadCommentResponses(commentId: number, page: number): Promise<void>;
+  sendNewCommentResponse(commentId: number, content: string): Promise<void>;
 }
 
 export const CommentSection = ({
@@ -220,9 +301,9 @@ export const CommentSection = ({
   handleChangeCommentEvaluation,
   sendNewComment,
   loadCommentResponses,
+  sendNewCommentResponse
 }: Props) => {
   const { userData } = useUserData();
-  const textFieldRef = useRef<HTMLDivElement>(null);
   const [newComment, setNewComment] = useState("");
   const snack = useSnack();
 
@@ -246,43 +327,18 @@ export const CommentSection = ({
       <Typography sx={{ fontSize: "16px", fontWeight: "600", mb: "25px" }}>
         {commentCount} comments
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center" }}>
-        <Box
-          component="img"
-          src={`${process.env.REACT_APP_MEDIA_ENDPOINT}/${userData.avatar}`}
-          sx={{ width: "40px", height: "40px", borderRadius: "50%" }}
-        />
-        <Box sx={{ ml: "20px", width: "100%" }}>
-          <Typography sx={{ color: "#CFD1D2" }}>{userData.name}</Typography>
-          <TextField
-            sx={{
-              border: "none",
-              borderBottom: "2px solid rgba(255, 255, 255, 0.05)",
-              input: { color: "#FFF", outline: "hidden" },
-              mt: "10px",
-              width: "70%",
-            }}
-            ref={textFieldRef}
-            value={newComment}
-            onKeyDown={keyPressEvent}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Write an comment..."
-            inputProps={{
-              style: {
-                padding: 2,
-                fontSize: 13,
-                color: "#FFF",
-              },
-              maxLength: 200,
-            }}
-          />
-        </Box>
-      </Box>
+      <NewCommentInput
+        keyPressEvent={keyPressEvent}
+        value={newComment}
+        setValue={setNewComment}
+        userData={userData}
+      />
       {comments.map((comment) => (
         <CommentBox
           comment={comment}
           handleChangeCommentEvaluation={handleChangeCommentEvaluation}
           loadCommentResponses={loadCommentResponses}
+          sendNewCommentResponse={sendNewCommentResponse}
           isResponse={false}
         />
       ))}
