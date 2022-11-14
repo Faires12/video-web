@@ -40,7 +40,7 @@ export const MainVideo = ({
         component="video"
         src={videoUrl}
         controls
-        sx={{ width: "90%", borderRadius: "20px", maxHeight: '500px'}}
+        sx={{ width: "90%", borderRadius: "20px", height: '500px'}}
       />
       <Box
         sx={{
