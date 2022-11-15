@@ -15,3 +15,12 @@ export async function GetLoggedUserData() : Promise<UserData>{
         throw error
     }
 }
+
+export async function GetUserDataByEmail(email: string) : Promise<UserData>{
+    try {
+        const userData = await get("/user/" + email)
+        return userData
+    } catch (error) {
+        throw error
+    }
+}

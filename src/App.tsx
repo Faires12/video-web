@@ -7,10 +7,20 @@ import { LoadingProvider } from "./context/loading_context";
 import { SnackProvider } from "./context/snack_context";
 import { UserDataProvider } from "./context/user_data_context";
 import { Upload } from "./pages/Upload";
+import { Profile } from "./pages/Profile";
+import {createTheme, ThemeProvider} from '@mui/material'
 
 function App() {
+
+  const theme = createTheme({
+    typography: {
+     "fontFamily": 'Poppins',
+    }
+ });
+
   return (
-    <LoadingProvider>
+    <ThemeProvider theme={theme}>
+<LoadingProvider>
       <SnackProvider>
         <UserDataProvider>
           <ModalProvider>
@@ -18,12 +28,15 @@ function App() {
               <Routes>
                 <Route path="/video/:id" element={<Video />} />
                 <Route path="/upload" element={<Upload />} />
+                <Route path="/profile/:email" element={<Profile />} />
               </Routes>
             </Layout>
           </ModalProvider>
         </UserDataProvider>
       </SnackProvider>
     </LoadingProvider>
+    </ThemeProvider>
+    
   );
 }
 

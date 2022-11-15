@@ -19,7 +19,23 @@ export interface VideoData {
 export async function getVideo(id: number): Promise<VideoData> {
   try {
     const res = await get(`/video/${id}`);
-    console.log(res);
+    return res;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export enum VideoOrderBy{
+  Views = 1,
+  Recent = 2
+}
+
+export async function getUserVideos(email: string, page: number, rows: number, orderBy?: number): Promise<VideoData[]> {
+  try {
+    let url = `/video/user/${email}?page=${page}&rows=${rows}`
+    if(orderBy)
+      url += `&orderBy=${orderBy}`
+    const res = await get(url);
     return res;
   } catch (error) {
     throw error;
