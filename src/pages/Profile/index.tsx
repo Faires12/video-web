@@ -9,6 +9,9 @@ import { useLoading } from "../../context/loading_context";
 import validator from "validator";
 import { getUserVideos, VideoData, VideoOrderBy } from "../../services/video";
 import { format } from "timeago.js";
+import { VideoList } from "../../components/VideoList";
+import { GetSubscription, ManageSubscription } from "../../services/subscription";
+import { isLogged } from "../../services/auth";
 
 export const Profile = () => {
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
@@ -22,6 +25,8 @@ export const Profile = () => {
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState(10);
   const [orderBy, setOrderBy] = useState(VideoOrderBy.Recent);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const {userData} = useUserData()
 
   useEffect(() => {
     if (otherUserData) getBgColor(`${baseUrl}/${otherUserData.avatar}`);
@@ -33,20 +38,40 @@ export const Profile = () => {
   };
 
   useEffect(() => {
-    if (email && validator.isEmail(email)) getUserData(email);
+    if (email && validator.isEmail(email)) {
+      getUserData(email);
+
+    }
     else navigate("/");
-  }, []);
+  }, [userData]);
 
   const getUserData = async (email: string) => {
+    if(isLogged() && !userData.email)
+      return
     loading.show();
     try {
-      const [userData, videos] = await Promise.all([
+      const [user, videos] = await Promise.all([
         GetUserDataByEmail(email),
         getUserVideos(email, page, rows, orderBy),
       ]);
 
-      setOtherUserData(userData);
+      if(user.email !== userData.email && isLogged()){
+        const subscription = await GetSubscription(email)
+        setIsSubscribed(subscription)
+      }  
+      setOtherUserData(user);
       setVideosData(videos);
+    } catch (error) {}
+    loading.hide();
+  };
+
+  const handleSubscription = async () => {
+    if (!otherUserData) return;
+
+    try {
+      loading.show();
+      const res = await ManageSubscription(otherUserData.email);
+      setIsSubscribed(res);
     } catch (error) {}
     loading.hide();
   };
@@ -73,6 +98,21 @@ export const Profile = () => {
       setVideosData(videos);
     } catch (error) {}
     loading.hide();
+  };
+
+  const changePage = () => {
+    if (email && validator.isEmail(email)) {
+      loadMoreVideos(email, page + 1);
+      setPage((page) => page + 1);
+    }
+  };
+
+  const changeOrderBy = (order: number) => {
+    if (email && validator.isEmail(email)) {
+      setOrderBy(order);
+      setPage(1);
+      loadChangeOrderVideos(email, 1, order);
+    }
   };
 
   return (
@@ -116,120 +156,33 @@ export const Profile = () => {
             {otherUserData?.subsCount} followers
           </Typography>
         </Box>
-        <Button
+        {otherUserData?.email !== userData.email && <Button
           variant="contained"
           sx={{
             color: "#FFF",
-            background: "#FF7551",
+            background: isSubscribed ? 'blue' : "#FF7551",
             borderRadius: "5px",
             height: "50px",
             width: "150px",
             ml: "30px",
             textTransform: "none",
             "&.MuiButtonBase-root:hover": {
-              background: "#FF7551",
+              background: isSubscribed ? 'blue' : "#FF7551",
             },
           }}
+          onClick={handleSubscription}
         >
-          Follow
-        </Button>
+          {isSubscribed ? 'Following' : 'Follow'}
+        </Button>}
       </Box>
-      <Box sx={{ display: "flex", alignItems: "center", p: "20px" }}>
-        <Typography>Order by: </Typography>
-        <Select
-          sx={{
-            background: "#FFF",
-            ml: "10px",
-          }}
-          value={orderBy}
-          onChange={(e: any) => {
-            if (email && validator.isEmail(email)) {
-              setOrderBy(e.target.value);
-              setPage(1);
-              loadChangeOrderVideos(email, 1, e.target.value);
-            }
-          }}
-        >
-          {(
-            Object.keys(VideoOrderBy).filter((v) => !isNaN(Number(v))) as Array<
-              keyof typeof VideoOrderBy
-            >
-          ).map((key) => (
-            <MenuItem value={Number(key)}>{VideoOrderBy[key]}</MenuItem>
-          ))}
-        </Select>
-      </Box>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          flexWrap: "wrap",
-          mt: "15px"
-        }}
-      >
-        {videosData.map((video) => (
-          <Box
-            sx={{
-              m: "10px",
-              transition: "0.5s",
-              cursor: "pointer",
-              "&:hover": {
-                filter: "brightness(120%)",
-              },
-            }}
-            onClick={() => navigate(`/video/${video.id}`)}
-          >
-            <Box
-              sx={{
-                width: "250px",
-                height: "175px",
-                backgroundImage: `url(${baseUrl}/${video.thumbnail})`,
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "100% 100%",
-                borderRadius: "6px",
-              }}
-            ></Box>
-            <Typography sx={{ mt: "3px" }}>{video.title}</Typography>
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Typography sx={{ fontSize: "13px" }}>
-                {video.viewsCount} views •{" "}
-              </Typography>
-              <Typography
-                sx={{ ml: "5px", color: "#808191", fontSize: "12px" }}
-              >
-                {format(video.createdAt)}
-              </Typography>
-            </Box>
-          </Box>
-        ))}
-      </Box>
-      {videosData.length % rows === 0 && (
-        <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
-          <Button
-            variant="contained"
-            sx={{
-              color: "#FFF",
-              background: "#FF7551",
-              borderRadius: "5px",
-              height: "50px",
-              width: "150px",
-              mt: "30px",
-              textTransform: "none",
-              "&.MuiButtonBase-root:hover": {
-                background: "#FF7551",
-              },
-            }}
-            onClick={() => {
-              if (email && validator.isEmail(email)) {
-                loadMoreVideos(email, page + 1);
-                setPage((page) => page + 1);
-              }
-            }}
-          >
-            Load more
-          </Button>
-        </Box>
-      )}
+      <VideoList
+        changePage={changePage}
+        orderBy={orderBy}
+        rows={rows}
+        videosData={videosData}
+        changeOrderBy={changeOrderBy}
+        flexDirection={"row"}
+      />
     </Box>
   );
 };

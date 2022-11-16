@@ -18,6 +18,8 @@ interface Props {
   evaluation?: boolean | null
   createdAt: Date
   handleChangeEvaluation?(isPositive: boolean): Promise<void>;
+  isSubscribed?: boolean
+  handleSubscription?(): void
 }
 
 export const MainVideo = ({
@@ -31,6 +33,8 @@ export const MainVideo = ({
   evaluation,
   createdAt,
   handleChangeEvaluation,
+  isSubscribed,
+  handleSubscription
 }: Props) => {
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
 
@@ -40,14 +44,14 @@ export const MainVideo = ({
         component="video"
         src={videoUrl}
         controls
-        sx={{ width: "90%", borderRadius: "20px", height: '500px'}}
+        sx={{ width: "100%", borderRadius: "20px", height: '500px'}}
       />
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          width: "90%",
+          width: "100%",
           mt: "10px",
         }}
       >
@@ -61,7 +65,7 @@ export const MainVideo = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          width: "90%",
+          width: "100%",
           mt: "20px",
         }}
       >
@@ -92,18 +96,19 @@ export const MainVideo = ({
             variant="contained"
             sx={{
               color: "#FFF",
-              background: "#FF7551",
+              background: isSubscribed ? 'blue' : "#FF7551",
               borderRadius: "5px",
               height: "25px",
               width: "75px",
               ml: "30px",
               textTransform: "none",
               "&.MuiButtonBase-root:hover": {
-                background: "#FF7551",
+                background: isSubscribed ? 'blue' : "#FF7551",
               },
             }}
+            onClick={() => handleSubscription && handleSubscription()}
           >
-            Follow
+            {isSubscribed ? 'Following' : 'Follow'}
           </Button>
         </Box>
         <Box sx={{ color: "#80819", fontSize: "12px" }}>
