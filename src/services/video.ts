@@ -42,6 +42,16 @@ export async function getUserVideos(email: string, page: number, rows: number, o
   }
 }
 
+export async function getRelatedVideos(email: string, page: number, rows: number): Promise<VideoData[]> {
+  try {
+    let url = `/video/related/${email}?page=${page}&rows=${rows}`
+    const res = await get(url);
+    return res;
+  } catch (error) {
+    throw error;
+  }
+}
+
 interface UploadVideoInterface {
   title: string;
   description?: string;

@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box } from "@mui/system";
 import MainVideo from "../../components/MainVideo";
-import {
-  getUserVideos,
-  getVideo,
-  VideoData,
-  VideoOrderBy,
-} from "../../services/video";
+import { getRelatedVideos, getVideo, VideoData } from "../../services/video";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLoading } from "../../context/loading_context";
 import { useSnack } from "../../context/snack_context";
@@ -29,6 +24,9 @@ import {
   GetSubscription,
   ManageSubscription,
 } from "../../services/subscription";
+import AddToPhotosIcon from "@mui/icons-material/AddToPhotos";
+import { AddVideoToPlaylist, CreatePlaylist, GetUserPlaylists, PlaylistData, RemoveVideoFromPlaylist } from "../../services/playlist";
+import { PlaylistModal } from "../../components/PlaylistModal";
 
 const Video = () => {
   const { id } = useParams();
@@ -39,10 +37,12 @@ const Video = () => {
   const [commentsPage, setCommentsPage] = useState(1);
   const [commentsRows, setCommentsRows] = useState(10);
   const [videosPage, setVideosPage] = useState(1);
-  const [videosRows, setVideosRows] = useState(5);
+  const [videosRows, setVideosRows] = useState(10);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const loading = useLoading();
   const snack = useSnack();
+  const [playlists, setPlaylists] = useState<PlaylistData[]>([]);
+  const [openPlaylistModal, setOpenPlaylistModal] = useState(false);
 
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
 
@@ -88,9 +88,12 @@ const Video = () => {
   const loadRelatedVideos = async (email: string, page: number) => {
     try {
       loading.show();
-      const res = await getUserVideos(email, page, 5, VideoOrderBy.Recent);
+      const res = await getRelatedVideos(email, page, videosRows);
       const newRelatedVideos = relatedVideos;
-      newRelatedVideos.push(...res);
+      for (const video of res) {
+        if (newRelatedVideos.find((v) => v.id === video.id)) continue;
+        newRelatedVideos.push(video);
+      }
       setRelatedVideos([...newRelatedVideos]);
     } catch (error) {}
     loading.hide();
@@ -216,44 +219,98 @@ const Video = () => {
     }
   };
 
+  const OpenModal = async () => {
+    loading.show();
+    try {
+      const res = await GetUserPlaylists();
+      setPlaylists(res);
+      setOpenPlaylistModal(true);
+    } catch (error) {}
+    loading.hide();
+  };
+
+  const handleVideoInPlaylist = async (playlistId: number, videoId: number, addVideo: boolean) => {
+    loading.show();
+    try {
+      let playlist : PlaylistData
+      if(addVideo)
+        playlist = await AddVideoToPlaylist({playlistId, videoId})
+      else
+        playlist = await RemoveVideoFromPlaylist({playlistId, videoId})
+   
+      const newPlaylists = playlists
+      const index = newPlaylists.findIndex(p => p.id === playlist.id)
+      newPlaylists[index] = playlist
+      setPlaylists([...newPlaylists])
+    } catch (error) {}
+    loading.hide();
+  };
+
+  const handleCreatePlaylist = async (title: string, videoId: number, description?: string) => {
+    loading.show();
+    try {
+      const playlist = await CreatePlaylist({title, description, videoId})
+   
+      const newPlaylists = playlists
+      newPlaylists.push(playlist)
+      setPlaylists([...newPlaylists])
+    } catch (error) {}
+    loading.hide();
+  };
+
   return (
-    <Box sx={{ width: "100%", display: "flex", pt: "20px", pl: "40px" }}>
-      <Box sx={{ width: "65%" }}>
-        {videoData && (
-          <MainVideo
-            createdAt={videoData.createdAt}
-            createdBy={videoData.created_by}
-            deslikesCount={videoData.deslikesCount}
-            likesCount={videoData.likesCount}
-            videoUrl={`${baseUrl}/${videoData.path}`}
-            title={videoData.title}
-            viewsCount={videoData.viewsCount}
-            description={videoData.description}
-            evaluation={videoData.evaluation}
-            handleChangeEvaluation={handleChangeEvaluation}
-            handleSubscription={handleSubscription}
-            isSubscribed={isSubscribed}
+    <>
+      <Box sx={{ width: "100%", display: "flex", pt: "20px", pl: "40px" }}>
+        <Box sx={{ width: "65%" }}>
+          {videoData && (
+            <MainVideo
+              createdAt={videoData.createdAt}
+              createdBy={videoData.created_by}
+              deslikesCount={videoData.deslikesCount}
+              likesCount={videoData.likesCount}
+              videoUrl={`${baseUrl}/${videoData.path}`}
+              title={videoData.title}
+              viewsCount={videoData.viewsCount}
+              description={videoData.description}
+              evaluation={videoData.evaluation}
+              handleChangeEvaluation={handleChangeEvaluation}
+              handleSubscription={handleSubscription}
+              isSubscribed={isSubscribed}
+            />
+          )}
+          <AddToPhotosIcon
+            sx={{ mt: "30px", cursor: "pointer" }}
+            titleAccess="Manage playlists"
+            onClick={OpenModal}
           />
-        )}
-        <CommentSection
-          commentCount={videoData?.commentCount ?? 0}
-          comments={comments}
-          handleChangeCommentEvaluation={handleChangeCommentEvaluation}
-          sendNewComment={sendNewComment}
-          loadCommentResponses={loadCommentResponses}
-          sendNewCommentResponse={sendNewCommentResponse}
-        />
+          <CommentSection
+            commentCount={videoData?.commentCount ?? 0}
+            comments={comments}
+            handleChangeCommentEvaluation={handleChangeCommentEvaluation}
+            sendNewComment={sendNewComment}
+            loadCommentResponses={loadCommentResponses}
+            sendNewCommentResponse={sendNewCommentResponse}
+          />
+        </Box>
+        <Box sx={{ width: "35%" }}>
+          <VideoList
+            changePage={changePage}
+            videosData={relatedVideos}
+            flexDirection={"column"}
+            rows={videosRows}
+            showCreatorName={true}
+          />
+        </Box>
       </Box>
-      <Box sx={{ width: "35%" }}>
-        <VideoList
-          changePage={changePage}
-          videosData={relatedVideos}
-          flexDirection={"column"}
-          rows={videosRows}
-          showCreatorName={true}
-        />
-      </Box>
-    </Box>
+      <PlaylistModal
+        open={openPlaylistModal}
+        setOpen={setOpenPlaylistModal}
+        playlists={playlists}
+        video={videoData}
+        handleVideoInPlaylist={handleVideoInPlaylist}
+        handleCreatePlaylist={handleCreatePlaylist}
+      />
+    </>
   );
 };
 
