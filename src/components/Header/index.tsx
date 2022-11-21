@@ -6,6 +6,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import { useAuthenticationModal } from "../../context/authentication_modal_context";
 import { useUserData } from "../../context/user_data_context";
 import { doLogout, isLogged } from "../../services/auth";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   drawerWidth: number;
@@ -17,6 +18,7 @@ const Header = ({ drawerWidth, setShowMobile }: Props) => {
   const { userData, setUserData } = useUserData();
   const appBarRef = useRef<HTMLDivElement>(null);
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
+  const navigate = useNavigate()
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -28,6 +30,11 @@ const Header = ({ drawerWidth, setShowMobile }: Props) => {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const navigateToProfile = () => {
+    navigate(`/profile/${userData.email}`)
+    handleClose()
+  }
 
   const logout = () => {
     doLogout()
@@ -106,7 +113,7 @@ const Header = ({ drawerWidth, setShowMobile }: Props) => {
                 onClose={handleClose}
                 sx={{mt: '10px'}}
               >
-                <MenuItem onClick={handleClose}>Perfil</MenuItem>
+                <MenuItem onClick={navigateToProfile}>Perfil</MenuItem>
                 <MenuItem onClick={logout}>Logout</MenuItem>
               </Menu>
             </>

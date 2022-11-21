@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Box } from "@mui/system";
+import { Typography } from "@mui/material";
 import MainVideo from "../../components/MainVideo";
 import { getRelatedVideos, getVideo, VideoData } from "../../services/video";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useLoading } from "../../context/loading_context";
 import { useSnack } from "../../context/snack_context";
 import {
@@ -25,8 +26,18 @@ import {
   ManageSubscription,
 } from "../../services/subscription";
 import AddToPhotosIcon from "@mui/icons-material/AddToPhotos";
-import { AddVideoToPlaylist, CreatePlaylist, GetUserPlaylists, PlaylistData, RemoveVideoFromPlaylist } from "../../services/playlist";
+import {
+  AddVideoToPlaylist,
+  CreatePlaylist,
+  GetPlaylist,
+  GetUserPlaylists,
+  PlaylistData,
+  RemoveVideoFromPlaylist,
+} from "../../services/playlist";
 import { PlaylistModal } from "../../components/PlaylistModal";
+import { useUserData } from "../../context/user_data_context";
+import { format } from "timeago.js";
+import { PlaylistCard } from "../../components/PlaylistCard";
 
 const Video = () => {
   const { id } = useParams();
@@ -42,28 +53,49 @@ const Video = () => {
   const loading = useLoading();
   const snack = useSnack();
   const [playlists, setPlaylists] = useState<PlaylistData[]>([]);
+  const [currentPlaylist, setCurrentPlaylist] = useState<PlaylistData>();
   const [openPlaylistModal, setOpenPlaylistModal] = useState(false);
-
+  const { userData } = useUserData();
+  const [searchParams] = useSearchParams();
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
 
   useEffect(() => {
     getVideoData();
+  }, [userData]);
+
+  useEffect(() => {
+    getPlaylist();
     HandleGetVideoComments(commentsPage, commentsRows);
-  }, []);
+  }, [videoData]);
+
+  const getPlaylist = async () => {
+    if (!videoData) return;
+
+    const playlistId = searchParams.get("playlistId");
+    if (!playlistId || isNaN(Number(playlistId))) return;
+
+    loading.show();
+    try {
+      const res = await GetPlaylist(Number(playlistId));
+      if (res.videos.find((v) => v.id === videoData.id))
+        setCurrentPlaylist(res);
+    } catch (error) {}
+    loading.hide();
+  };
 
   const getVideoData = async () => {
     try {
       if (!id || isNaN(Number(id))) {
-        navigate("/");
         return;
       }
+      if (isLogged() && !userData.email) return;
 
       loading.show();
       const res = await getVideo(Number(id));
       setVideoData(res);
       loadRelatedVideos(res.created_by.email, videosPage);
 
-      if (isLogged()) {
+      if (isLogged() && userData.email !== res.created_by.email) {
         const subscription = await GetSubscription(res.created_by.email);
         setIsSubscribed(subscription);
       }
@@ -111,9 +143,10 @@ const Video = () => {
   };
 
   const HandleGetVideoComments = async (page: number, rows: number) => {
+    if (!videoData) return;
     try {
       loading.show();
-      const res = await GetVideoComments(Number(id), page, rows);
+      const res = await GetVideoComments(videoData.id, page, rows);
       const newComments = [...comments];
       for (const comment of res) {
         if (!newComments.find((c) => c.id === comment.id))
@@ -229,31 +262,38 @@ const Video = () => {
     loading.hide();
   };
 
-  const handleVideoInPlaylist = async (playlistId: number, videoId: number, addVideo: boolean) => {
+  const handleVideoInPlaylist = async (
+    playlistId: number,
+    videoId: number,
+    addVideo: boolean
+  ) => {
     loading.show();
     try {
-      let playlist : PlaylistData
-      if(addVideo)
-        playlist = await AddVideoToPlaylist({playlistId, videoId})
-      else
-        playlist = await RemoveVideoFromPlaylist({playlistId, videoId})
-   
-      const newPlaylists = playlists
-      const index = newPlaylists.findIndex(p => p.id === playlist.id)
-      newPlaylists[index] = playlist
-      setPlaylists([...newPlaylists])
+      let playlist: PlaylistData;
+      if (addVideo)
+        playlist = await AddVideoToPlaylist({ playlistId, videoId });
+      else playlist = await RemoveVideoFromPlaylist({ playlistId, videoId });
+
+      const newPlaylists = playlists;
+      const index = newPlaylists.findIndex((p) => p.id === playlist.id);
+      newPlaylists[index] = playlist;
+      setPlaylists([...newPlaylists]);
     } catch (error) {}
     loading.hide();
   };
 
-  const handleCreatePlaylist = async (title: string, videoId: number, description?: string) => {
+  const handleCreatePlaylist = async (
+    title: string,
+    description?: string,
+    videoId?: number
+  ) => {
     loading.show();
     try {
-      const playlist = await CreatePlaylist({title, description, videoId})
-   
-      const newPlaylists = playlists
-      newPlaylists.push(playlist)
-      setPlaylists([...newPlaylists])
+      const playlist = await CreatePlaylist({ title, description, videoId });
+
+      const newPlaylists = playlists;
+      newPlaylists.push(playlist);
+      setPlaylists([...newPlaylists]);
     } catch (error) {}
     loading.hide();
   };
@@ -293,6 +333,9 @@ const Video = () => {
           />
         </Box>
         <Box sx={{ width: "35%" }}>
+          {videoData && currentPlaylist && currentPlaylist.videos.length > 0 && (
+            <PlaylistCard playlist={currentPlaylist} currentVideo={videoData}/>
+          )}
           <VideoList
             changePage={changePage}
             videosData={relatedVideos}

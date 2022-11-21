@@ -19,6 +19,15 @@ export async function GetUserPlaylists() : Promise<PlaylistData[]> {
     }
 }
 
+export async function GetPlaylist(id: number) : Promise<PlaylistData> {
+    try {
+        const playlists = await get("/playlist/" + id)
+        return playlists
+    } catch (error) {
+        throw error
+    }
+}
+
 export interface ManageVideoInPlaylist{
     videoId: number
     playlistId: number

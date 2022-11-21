@@ -1,7 +1,7 @@
 import HomeIcon from '@mui/icons-material/Home';
-import PersonIcon from '@mui/icons-material/Person';
 import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import GroupIcon from '@mui/icons-material/Group';
 
 interface Navigation{
     text: string
@@ -12,22 +12,22 @@ interface Navigation{
 export const navMenu : Navigation[] = [
     {
         text: 'Home',
-        link: '',
+        link: '/',
         icon: <HomeIcon/>
     },
     {
         text: 'Following',
         link: '',
-        icon: <PersonIcon/>
+        icon: <GroupIcon/>
     },
     {
         text: 'Playlists',
-        link: '',
+        link: '/playlists',
         icon: <FeaturedPlayListIcon/>
     },
     {
         text: 'New Upload',
-        link: '',
+        link: '/upload',
         icon: <FileUploadIcon/>
     },
 ]

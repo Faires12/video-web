@@ -80,7 +80,7 @@ export const Upload = () => {
 
     if (description && description.length > 200) {
       setDescriptionError(
-        "AThe description need to have at max 200 characteres"
+        "The description need to have at max 200 characteres"
       );
       return true;
     }

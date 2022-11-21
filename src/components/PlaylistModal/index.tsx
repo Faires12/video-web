@@ -17,21 +17,22 @@ import { PlaylistData } from "../../services/playlist";
 import { VideoData } from "../../services/video";
 import { Box } from "@mui/system";
 import { useSnack } from "../../context/snack_context";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   open: boolean;
   setOpen(v: boolean): void;
   playlists: PlaylistData[];
-  video: VideoData | undefined;
-  handleVideoInPlaylist(
+  video?: VideoData | undefined;
+  handleVideoInPlaylist?(
     playlistId: number,
     videoId: number,
     addVideo: boolean
   ): Promise<void>;
   handleCreatePlaylist(
     title: string,
-    videoId: number,
-    description?: string
+    description?: string,
+    videoId?: number,
   ): Promise<void>;
 }
 
@@ -49,6 +50,7 @@ export const PlaylistModal = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const snack = useSnack()
+  const navigate = useNavigate()
 
   const getCheckedPlaylist = (playlist: PlaylistData) => {
     if (playlist.videos.find((v) => v.id === video?.id)) return true;
@@ -105,7 +107,14 @@ export const PlaylistModal = ({
                 direction="row"
                 justifyContent="space-between"
               >
-                <Box>
+                <Box sx={{cursor: 'pointer'}} onClick={() => {
+                  if(video && playlist.videos.find(v => v.id === video.id)){
+                    window.location.href = `/video/${video.id}?playlistId=${playlist.id}`
+                  }
+                  else if(playlist.videos.length > 0){
+                    window.location.href = `/video/${playlist.videos[0].id}?playlistId=${playlist.id}`
+                  }
+                }}>
                   <Typography>{playlist.title}</Typography>
                   <Typography sx={{ fontSize: "12px" }}>
                     {playlist?.description}
@@ -115,15 +124,15 @@ export const PlaylistModal = ({
                     {"video".concat(playlist?.videos.length !== 1 ? "s" : "")}
                   </Typography>
                 </Box>
-                <Checkbox
+                {video && <Checkbox
                   checked={getCheckedPlaylist(playlist)}
                   onChange={(e) => {
                     if (!video) return;
                     if (!getCheckedPlaylist(playlist))
-                      handleVideoInPlaylist(playlist.id, video.id, true);
-                    else handleVideoInPlaylist(playlist.id, video.id, false);
+                    handleVideoInPlaylist && handleVideoInPlaylist(playlist.id, video.id, true);
+                    else handleVideoInPlaylist && handleVideoInPlaylist(playlist.id, video.id, false);
                   }}
-                />
+                />}
               </Stack>
             ))}
           </Stack>
@@ -187,8 +196,8 @@ export const PlaylistModal = ({
           <Button
             onClick={() => {
               if (!createPlaylist) setCreatePlaylist(true);
-              else if(validatePlaylist() && video) {
-                handleCreatePlaylist(title, video.id, description)
+              else if(validatePlaylist()) {
+                handleCreatePlaylist(title, description, video ? video.id : undefined)
                 setCreatePlaylist(false)
                 setTitle("")
                 setDescription("")
