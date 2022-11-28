@@ -104,7 +104,7 @@ const CommentBox = ({
           </Box>
         </Box>
         <Box sx={{ display: "flex", flexDirection: "column", ml: "20px" }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Box sx={{ display: "flex", }}>
             <Box
               component="img"
               src={`${baseUrl}/${comment.created_by.avatar}`}
@@ -146,7 +146,7 @@ const CommentBox = ({
                 )}
               </Box>
               <Typography
-                sx={{ color: "#AEAFB7", fontSize: "13px", mt: "5px" }}
+                sx={{ color: "#AEAFB7", fontSize: "13px", mt: "5px", wordBreak: 'break-word' }}
               >
                 {comment.content}
               </Typography>
@@ -323,7 +323,8 @@ export const CommentSection = ({
   };
 
   return (
-    <Box sx={{ width: "100%", my: "40px" }}>
+    <Box sx={{ width: "100%", my: "40px",           px: {xs: '10px', md: '0'}
+  }}>
       <Typography sx={{ fontSize: "16px", fontWeight: "600", mb: "25px" }}>
         {commentCount} comments
       </Typography>

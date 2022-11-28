@@ -17,7 +17,7 @@ export const navMenu : Navigation[] = [
     },
     {
         text: 'Following',
-        link: '',
+        link: '/following',
         icon: <GroupIcon/>
     },
     {

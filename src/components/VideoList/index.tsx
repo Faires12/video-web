@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Box } from "@mui/system";
 import { Typography, Button, Select, MenuItem } from "@mui/material";
 import { VideoData, VideoOrderBy } from "../../services/video";
@@ -13,6 +13,7 @@ interface Props {
   changePage(): void;
   flexDirection: "row" | "column";
   showCreatorName?: boolean;
+  hideLoadMore?: boolean
 }
 
 export const VideoList = ({
@@ -23,6 +24,7 @@ export const VideoList = ({
   changePage,
   flexDirection,
   showCreatorName,
+  hideLoadMore
 }: Props) => {
   const navigate = useNavigate();
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
@@ -72,8 +74,8 @@ export const VideoList = ({
                 filter: "brightness(120%)",
               },
               width: flexDirection === "row" ? { xs: "48%", md: "21%" } : "70%",
-              m: flexDirection === "row" ? "1%" : "0",
-              mt: flexDirection === "row" ? "0" : index > 0 ? "15px" : "0",
+              m: flexDirection === "row" ? {xs: "1%", md: '2%'} : "0",
+              mt: flexDirection === "column" && index > 0 ? "15px" : "0",
             }}
             onClick={() => navigate(`/video/${video.id}`)}
           >
@@ -124,7 +126,7 @@ export const VideoList = ({
           </Box>
         ))}
       </Box>
-      {videosData.length % rows === 0 && (
+      {videosData.length % rows === 0 && !hideLoadMore && (
         <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
           <Button
             variant="contained"

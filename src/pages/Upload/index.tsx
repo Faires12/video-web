@@ -46,7 +46,7 @@ export const Upload = () => {
       return true;
     }
 
-    if (thumb.type !== "image/png" && thumb.type !== "image/jpeg") {
+    if (thumb.type !== "image/png" && thumb.type !== "image/jpeg" && thumb.type !== "image/gif ") {
       snack.error("The thumb need to be of type .jpg or png");
       return true;
     }
@@ -259,7 +259,7 @@ export const Upload = () => {
         type="file"
         style={{ display: "none" }}
         ref={thumbRef}
-        accept="image/png, image/jpeg"
+        accept="image/png, image/jpeg, image/gif"
         onChange={(e) => {
           const file = e.target.files ? e.target.files[0] : null;
           if (file) {

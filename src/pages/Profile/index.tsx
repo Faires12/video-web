@@ -71,7 +71,9 @@ export const Profile = () => {
     try {
       loading.show();
       const res = await ManageSubscription(otherUserData.email);
+      const user = await GetUserDataByEmail(otherUserData.email)
       setIsSubscribed(res);
+      setOtherUserData(user)
     } catch (error) {}
     loading.hide();
   };

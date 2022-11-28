@@ -30,6 +30,16 @@ export enum VideoOrderBy{
   Recent = 2
 }
 
+export async function getHomeVideos(page: number, rows: number): Promise<VideoData[]> {
+  try {
+    let url = `/video/home?page=${page}&rows=${rows}`
+    const res = await get(url);
+    return res;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function getUserVideos(email: string, page: number, rows: number, orderBy?: number): Promise<VideoData[]> {
   try {
     let url = `/video/user/${email}?page=${page}&rows=${rows}`
@@ -42,9 +52,9 @@ export async function getUserVideos(email: string, page: number, rows: number, o
   }
 }
 
-export async function getRelatedVideos(email: string, page: number, rows: number): Promise<VideoData[]> {
+export async function getRelatedVideos(videoId: number, page: number, rows: number): Promise<VideoData[]> {
   try {
-    let url = `/video/related/${email}?page=${page}&rows=${rows}`
+    let url = `/video/related/${videoId}?page=${page}&rows=${rows}`
     const res = await get(url);
     return res;
   } catch (error) {

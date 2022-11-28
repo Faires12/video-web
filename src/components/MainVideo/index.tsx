@@ -3,9 +3,10 @@ import { Box } from "@mui/system";
 import { Typography, Button } from "@mui/material";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
-import { VideoData } from "../../services/video";
 import { maskDateInFull } from "../../utils";
 import { UserData } from "../../services/user";
+import { useUserData } from "../../context/user_data_context";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   videoUrl: string
@@ -37,9 +38,12 @@ export const MainVideo = ({
   handleSubscription
 }: Props) => {
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
+  const {userData} = useUserData()
+  const navigate = useNavigate()
 
   return (
-    <Box sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ width: "100%", display: "flex", flexDirection: "column",           px: {xs: '10px', md: '0'}
+  }}>
       <Box
         component="video"
         src={videoUrl}
@@ -73,7 +77,8 @@ export const MainVideo = ({
           <Box
             component="img"
             src={`${baseUrl}/${createdBy.avatar}`}
-            sx={{ width: "40px", height: "40px", borderRadius: "50%" }}
+            sx={{ width: "40px", height: "40px", borderRadius: "50%", cursor: 'pointer'}}
+            onClick={() => navigate("/profile/" + createdBy.email)}
           />
           <Box
             sx={{
@@ -92,7 +97,7 @@ export const MainVideo = ({
               {createdBy.subsCount} Followers
             </Typography>
           </Box>
-          <Button
+          {userData.email !== createdBy.email && <Button
             variant="contained"
             sx={{
               color: "#FFF",
@@ -109,7 +114,7 @@ export const MainVideo = ({
             onClick={() => handleSubscription && handleSubscription()}
           >
             {isSubscribed ? 'Following' : 'Follow'}
-          </Button>
+          </Button>}
         </Box>
         <Box sx={{ color: "#80819", fontSize: "12px" }}>
           <Box sx={{ display: "flex", alignItems: "flex-end" }}>

@@ -48,7 +48,7 @@ const Video = () => {
   const [commentsPage, setCommentsPage] = useState(1);
   const [commentsRows, setCommentsRows] = useState(10);
   const [videosPage, setVideosPage] = useState(1);
-  const [videosRows, setVideosRows] = useState(10);
+  const [videosRows, setVideosRows] = useState(5);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const loading = useLoading();
   const snack = useSnack();
@@ -58,6 +58,14 @@ const Video = () => {
   const { userData } = useUserData();
   const [searchParams] = useSearchParams();
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
+
+  useEffect(() => {
+    setVideoData(undefined)
+    setComments([])
+    setRelatedVideos([])
+    setCurrentPlaylist(undefined)
+    setVideosPage(1)
+  }, [id])
 
   useEffect(() => {
     getVideoData();
@@ -93,7 +101,7 @@ const Video = () => {
       loading.show();
       const res = await getVideo(Number(id));
       setVideoData(res);
-      loadRelatedVideos(res.created_by.email, videosPage);
+      loadRelatedVideos(res.id, videosPage);
 
       if (isLogged() && userData.email !== res.created_by.email) {
         const subscription = await GetSubscription(res.created_by.email);
@@ -112,15 +120,17 @@ const Video = () => {
     try {
       loading.show();
       const res = await ManageSubscription(videoData?.created_by.email);
+      const video = await getVideo(videoData.id)
       setIsSubscribed(res);
+      setVideoData(video)
     } catch (error) {}
     loading.hide();
   };
 
-  const loadRelatedVideos = async (email: string, page: number) => {
+  const loadRelatedVideos = async (videoId: number, page: number) => {
     try {
       loading.show();
-      const res = await getRelatedVideos(email, page, videosRows);
+      const res = await getRelatedVideos(videoId, page, videosRows);
       const newRelatedVideos = relatedVideos;
       for (const video of res) {
         if (newRelatedVideos.find((v) => v.id === video.id)) continue;
@@ -171,6 +181,7 @@ const Video = () => {
       const newComments = [...comments];
       if (!isResponse) {
         const index = newComments.findIndex((c) => c.id === commentId);
+        newComment.responses = newComments[index].responses
         newComments[index] = newComment;
       } else {
         const mainIndex = newComments.findIndex((c) => c.id === mainCommentId);
@@ -247,7 +258,7 @@ const Video = () => {
   };
   const changePage = () => {
     if (videoData) {
-      loadRelatedVideos(videoData.created_by.email, videosPage + 1);
+      loadRelatedVideos(videoData.id, videosPage + 1);
       setVideosPage((page) => page + 1);
     }
   };
@@ -300,8 +311,8 @@ const Video = () => {
 
   return (
     <>
-      <Box sx={{ width: "100%", display: "flex", pt: "20px", pl: "40px" }}>
-        <Box sx={{ width: "65%" }}>
+      <Box sx={{ width: "100%", display: "flex", pt: "20px", pl: {xs: '0', md: '40px'}}}>
+        <Box sx={{ width: {xs: '100%', md: '65%'} }}>
           {videoData && (
             <MainVideo
               createdAt={videoData.createdAt}
@@ -319,7 +330,8 @@ const Video = () => {
             />
           )}
           <AddToPhotosIcon
-            sx={{ mt: "30px", cursor: "pointer" }}
+            sx={{ mt: "30px", cursor: "pointer",           ml: {xs: '10px', md: '0'}
+          }}
             titleAccess="Manage playlists"
             onClick={OpenModal}
           />
@@ -332,7 +344,7 @@ const Video = () => {
             sendNewCommentResponse={sendNewCommentResponse}
           />
         </Box>
-        <Box sx={{ width: "35%" }}>
+        <Box sx={{ width: "35%", display: {xs: 'none', md: 'block'} }}>
           {videoData && currentPlaylist && currentPlaylist.videos.length > 0 && (
             <PlaylistCard playlist={currentPlaylist} currentVideo={videoData}/>
           )}
