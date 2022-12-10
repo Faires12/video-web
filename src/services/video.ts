@@ -1,4 +1,4 @@
-import { get, post } from "./generic";
+import { del, get, post, put } from "./generic";
 import { UserData } from "./user";
 
 export interface VideoData {
@@ -34,6 +34,18 @@ export async function getHomeVideos(page: number, rows: number): Promise<VideoDa
   try {
     let url = `/video/home?page=${page}&rows=${rows}`
     const res = await get(url);
+    return res;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function SearchVideos(search: string, page: number, rows: number, orderBy?: number): Promise<VideoData[]> {
+  try {
+    let url = `/video/search?page=${page}&rows=${rows}`
+    if(orderBy)
+      url += `&orderBy=${orderBy}`
+    const res = await post(url, {search});
     return res;
   } catch (error) {
     throw error;
@@ -78,6 +90,37 @@ export async function UploadVideo(infos: UploadVideoInterface) : Promise<number>
     formData.append("video", infos.video);
     const id = await post("/video", formData, true);
     return id
+  } catch (error) {
+    throw error;
+  }
+}
+
+interface EditVideoInterface {
+  title?: string;
+  description?: string;
+  thumbnail?: File;
+  id: number
+}
+
+export async function EditVideo(infos: EditVideoInterface) : Promise<number> {
+  try {
+    const formData = new FormData();
+    if (infos.title) formData.append("title", infos.title);
+    if (infos.description) formData.append("description", infos.description);
+    if (infos.thumbnail) formData.append("thumbnail", infos.thumbnail);
+    formData.append("id", infos.id.toString());
+
+    const id = await put("/video", formData, true);
+    return id
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function DeleteVideo(id: number): Promise<void> {
+  try {
+    const res = await del(`/video/${id}`);
+    return res;
   } catch (error) {
     throw error;
   }

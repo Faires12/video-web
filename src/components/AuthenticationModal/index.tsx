@@ -70,7 +70,7 @@ export const AuthenticationModal = ({ open, setOpen, doneCallback }: Props) => {
     if(!avatar)
       return hasError
 
-    if(avatar.type !== "image/png" && avatar.type !== "image/jpeg"){
+    if(avatar.type !== "image/png" && avatar.type !== "image/jpeg" && avatar.type !== "image/gif"){
       snack.error("The file need to be .jpg or .png")
       hasError = true
     }
@@ -233,7 +233,7 @@ export const AuthenticationModal = ({ open, setOpen, doneCallback }: Props) => {
             type="file"
             style={{ display: "none" }}
             ref={fileRef}
-            accept="image/png, image/jpeg"
+            accept="image/png, image/jpeg, image/gif"
             onChange={(e) => {
               const file =  e.target.files ? e.target.files[0] : null;
               if (file) {

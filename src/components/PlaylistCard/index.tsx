@@ -25,7 +25,7 @@ export const PlaylistCard = ({ playlist, currentVideo }: Props) => {
     >
       <Box
         sx={{
-          width: "70%",
+          width: {xs: '100%', md: '70%'},
           border: "1px solid rgba(255, 255, 255, 0.05)",
         }}
       >

@@ -10,6 +10,7 @@ import { useLoading } from "../../context/loading_context";
 import { useUserData } from "../../context/user_data_context";
 import { useSnack } from "../../context/snack_context";
 import { UserData } from "../../services/user";
+import { DeleteModal } from "../DeleteModal";
 
 interface CommentBoxProps {
   comment: Comment;
@@ -23,6 +24,17 @@ interface CommentBoxProps {
   sendNewCommentResponse?(commentId: number, content: string): Promise<void>;
   isResponse: boolean;
   mainCommentId?: number;
+  handleEditComment(
+    commentId: number,
+    content: string,
+    isResponse: boolean,
+    mainCommentId?: number
+  ): Promise<void>;
+  handleDeleteComment(
+    commentId: number,
+    isResponse: boolean,
+    mainCommentId?: number
+  ): Promise<void>;
 }
 
 const CommentBox = ({
@@ -32,6 +44,8 @@ const CommentBox = ({
   isResponse,
   mainCommentId,
   sendNewCommentResponse,
+  handleEditComment,
+  handleDeleteComment
 }: CommentBoxProps) => {
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
   const [page, setPage] = useState(1);
@@ -40,6 +54,14 @@ const CommentBox = ({
   const [newComment, setNewComment] = useState("");
   const snack = useSnack();
   const { userData } = useUserData();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
+  const editRef = useRef<HTMLInputElement>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (isEditing) editRef.current?.focus();
+  }, [isEditing]);
 
   const keyPressEvent = async (e: any) => {
     if (e.key === "Enter") {
@@ -51,14 +73,70 @@ const CommentBox = ({
         snack.error("The comment can have 200 max");
         return;
       }
-      sendNewCommentResponse && sendNewCommentResponse(comment.id, newComment)
+      if(newComment === comment.content){
+        return;
+      }
+      sendNewCommentResponse && sendNewCommentResponse(comment.id, newComment);
       setNewComment("");
-      setResponding(false)
+      setResponding(false);
     }
   };
 
+  const keyPressEditEvent = async (e: any) => {
+    if (e.key === "Escape") {
+      setIsEditing(false);
+    }
+    if (e.key === "Enter") {
+      if (editValue.length < 5) {
+        snack.error("The comment have to be at least 5 characteres");
+        return;
+      }
+      if (editValue.length > 200) {
+        snack.error("The comment can have 200 max");
+        return;
+      }
+      handleEditComment(comment.id, editValue, isResponse, mainCommentId);
+      setIsEditing(false);
+      setEditValue("")
+    }
+  };
+
+  const changeToEdit = () => {
+    if (userData.email === comment.created_by.email) {
+      setIsEditing(true);
+      setEditValue(comment.content);
+    }
+  };
+
+  const changeToDelete = () => {
+    if (userData.email === comment.created_by.email) {
+      setIsDeleting(true);
+    }
+  };
+
+  
+  const handleClickOutside = (event: any) => {
+    if (editRef.current && !editRef.current.contains(event.target)) {
+      setIsEditing(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("click", handleClickOutside, true);
+    return () => {
+      document.removeEventListener("click", handleClickOutside, true);
+    };
+  }, []);
+
   return (
     <>
+      <DeleteModal
+        open={isDeleting}
+        close={() => setIsDeleting(false)}
+        okClick={() => handleDeleteComment(comment.id, isResponse, mainCommentId)}
+        title="Deltar comentário"
+        description="Tem certeza que quer deletar o comentário?"
+      />
       <Box
         sx={{
           display: "flex",
@@ -104,7 +182,7 @@ const CommentBox = ({
           </Box>
         </Box>
         <Box sx={{ display: "flex", flexDirection: "column", ml: "20px" }}>
-          <Box sx={{ display: "flex", }}>
+          <Box sx={{ display: "flex" }}>
             <Box
               component="img"
               src={`${baseUrl}/${comment.created_by.avatar}`}
@@ -144,12 +222,54 @@ const CommentBox = ({
                     Reply
                   </Typography>
                 )}
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    ml: "10px",
+                    cursor: "pointer",
+                    color: "red",
+                  }}
+                  onClick={changeToDelete}
+                >
+                  Delete
+                </Typography>
               </Box>
-              <Typography
-                sx={{ color: "#AEAFB7", fontSize: "13px", mt: "5px", wordBreak: 'break-word' }}
-              >
-                {comment.content}
-              </Typography>
+              {!isEditing ? (
+                <Typography
+                  sx={{
+                    color: "#AEAFB7",
+                    fontSize: "13px",
+                    mt: "5px",
+                    wordBreak: "break-word",
+                  }}
+                  onClick={changeToEdit}
+                >
+                  {comment.content}
+                </Typography>
+              ) : (
+                <TextField
+                  sx={{
+                    border: "none",
+                    borderBottom: "2px solid rgba(255, 255, 255, 0.05)",
+                    input: { color: "#FFF", outline: "hidden" },
+                    mt: "10px",
+                    width: "100%",
+                  }}
+                  inputRef={editRef}
+                  value={editValue}
+                  onKeyDown={keyPressEditEvent}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  placeholder="Write an comment..."
+                  inputProps={{
+                    style: {
+                      padding: 2,
+                      fontSize: 13,
+                      color: "#FFF",
+                    },
+                    maxLength: 200,
+                  }}
+                />
+              )}
             </Box>
           </Box>
           {!isResponse && (
@@ -171,7 +291,8 @@ const CommentBox = ({
                     comment.responses &&
                     comment.responses?.length === 0
                   ) {
-                    loadCommentResponses && loadCommentResponses(comment.id, page);
+                    loadCommentResponses &&
+                      loadCommentResponses(comment.id, page);
                     setPage((prevPage) => prevPage + 1);
                   } else if (
                     comment.commentCount > 0 &&
@@ -206,6 +327,8 @@ const CommentBox = ({
               handleChangeCommentEvaluation={handleChangeCommentEvaluation}
               isResponse={true}
               mainCommentId={comment.id}
+              handleEditComment={handleEditComment}
+              handleDeleteComment={handleDeleteComment}
             />
           ))}
           {comment.responses &&
@@ -213,7 +336,8 @@ const CommentBox = ({
             comment.responses.length < comment.commentCount && (
               <Typography
                 onClick={() => {
-                  loadCommentResponses && loadCommentResponses(comment.id, page);
+                  loadCommentResponses &&
+                    loadCommentResponses(comment.id, page);
                   setPage((prevPage) => prevPage + 1);
                 }}
                 sx={{
@@ -293,6 +417,17 @@ interface Props {
   sendNewComment(content: string): Promise<void>;
   loadCommentResponses(commentId: number, page: number): Promise<void>;
   sendNewCommentResponse(commentId: number, content: string): Promise<void>;
+  handleEditComment(
+    commentId: number,
+    content: string,
+    isResponse: boolean,
+    mainCommentId?: number
+  ): Promise<void>;
+  handleDeleteComment(
+    commentId: number,
+    isResponse: boolean,
+    mainCommentId?: number
+  ): Promise<void>;
 }
 
 export const CommentSection = ({
@@ -301,7 +436,9 @@ export const CommentSection = ({
   handleChangeCommentEvaluation,
   sendNewComment,
   loadCommentResponses,
-  sendNewCommentResponse
+  sendNewCommentResponse,
+  handleEditComment,
+  handleDeleteComment
 }: Props) => {
   const { userData } = useUserData();
   const [newComment, setNewComment] = useState("");
@@ -323,8 +460,7 @@ export const CommentSection = ({
   };
 
   return (
-    <Box sx={{ width: "100%", my: "40px",           px: {xs: '10px', md: '0'}
-  }}>
+    <Box sx={{ width: "100%", my: "40px", px: { xs: "10px", md: "0" } }}>
       <Typography sx={{ fontSize: "16px", fontWeight: "600", mb: "25px" }}>
         {commentCount} comments
       </Typography>
@@ -341,6 +477,8 @@ export const CommentSection = ({
           loadCommentResponses={loadCommentResponses}
           sendNewCommentResponse={sendNewCommentResponse}
           isResponse={false}
+          handleEditComment={handleEditComment}
+          handleDeleteComment={handleDeleteComment}
         />
       ))}
     </Box>

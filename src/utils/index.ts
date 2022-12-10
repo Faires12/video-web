@@ -76,3 +76,49 @@ export function getAverageRGB(src: string) {
   })
   
 }
+
+interface FileInfos{
+  base64: string
+  file: File
+}
+
+export function getFileInfosFromPath(src: string) : Promise<FileInfos> {
+  const imgEl = new Image();
+  imgEl.src = src;
+  imgEl.crossOrigin = "Anonymous";
+
+  return new Promise<FileInfos>((resolve, reject) => {
+    imgEl.onload = () => {
+      let base64 = ""
+      let file : File 
+
+      let canvas = document.createElement("canvas")
+      canvas.width = imgEl.width;
+      canvas.height = imgEl.height;
+
+      let context = canvas.getContext && canvas.getContext("2d")     
+      context && context.drawImage(imgEl, 0, 0);
+      let name = src.split('/').pop()
+      
+      base64 = canvas.toDataURL(name?.split(".").pop())
+      file = dataURLtoFile(base64, name)
+      console.log(base64)
+      
+      resolve({file, base64})
+    }
+  })
+} 
+
+function dataURLtoFile(dataurl: any, filename: any) {
+  var arr = dataurl.split(','),
+      mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]), 
+      n = bstr.length, 
+      u8arr = new Uint8Array(n);
+      
+  while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+  }
+  
+  return new File([u8arr], filename, {type:mime});
+}

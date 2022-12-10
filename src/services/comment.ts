@@ -1,4 +1,4 @@
-import { get, post } from "./generic"
+import { del, get, post, put } from "./generic"
 import { UserData } from "./user"
 
 export interface Comment{
@@ -11,6 +11,8 @@ export interface Comment{
     createdAt: Date
     commentCount: number
     evaluation?: boolean | null
+    comment_id?: number
+    video_id?: number
 } 
 
 export async function GetVideoComments(videoId: number, page: number, rows: number) : Promise<Comment[]>{
@@ -53,6 +55,24 @@ export async function CreateVideoCommentResponse(commentId: number, content: str
     try {
         const comment = await post(`/video/comment/response`, {commentId, content})
         return comment
+    } catch (error) {
+        throw error
+    }
+}
+
+
+export async function EditComment(id: number, content: string) : Promise<Comment>{
+    try {
+        const comment = await put(`/video/comment`, {id, content})
+        return comment
+    } catch (error) {
+        throw error
+    }
+}
+
+export async function DeleteComment(id: number,) : Promise<void>{
+    try {
+        await del(`/video/comment/` + id)
     } catch (error) {
         throw error
     }

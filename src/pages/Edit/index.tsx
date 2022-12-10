@@ -1,72 +1,93 @@
-import React, { useState, useRef } from "react";
-import { Box } from "@mui/system";
+import React, { useState, useRef, useEffect } from "react";
 import { TextField, Typography, Button } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import MainVideo from "../../components/MainVideo";
+import { Box } from "@mui/system";
 import { useUserData } from "../../context/user_data_context";
 import { useLoading } from "../../context/loading_context";
 import { useSnack } from "../../context/snack_context";
-import { UploadVideo } from "../../services/video";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { EditVideo, getVideo, VideoData } from "../../services/video";
+import { getFileInfosFromPath } from "../../utils";
 
-export const Upload = () => {
+export const Edit = () => {
   const [thumb, setThumb] = useState<File>();
   const [base64Thumb, setBase64Thumb] = useState("");
-  const [video, setVideo] = useState<File>();
-  const [base64Video, setBase64Video] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [titleError, setTitleError] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
   const thumbRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLInputElement>(null);
-  const { userData } = useUserData();
-  const loading = useLoading();
-  const snack = useSnack();
+  const {id} = useParams()
   const navigate = useNavigate()
+  const snack = useSnack()
+  const loading = useLoading()
+  const {userData} = useUserData()
+  const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
+
+  useEffect(() => {
+    if(userData.email)
+      verifyVideo()
+  }, [userData])
+
+  const verifyVideo = async () => {
+    if(!id || isNaN(Number(id))){
+        navigate("/")
+        return;
+    }
+    loading.show()
+    try {
+        const video = await getVideo(Number(id))
+        if(video.created_by.email !== userData.email){
+            snack.error("Video não pertence ao usuário")
+            loading.hide()
+            navigate("/")
+            return
+        }
+        setTitle(video.title)
+        if(video.description) setDescription(video.description)
+        const {file, base64} = await getFileInfosFromPath(`${baseUrl}/${video.thumbnail}`)
+        setThumb(file)
+        setBase64Thumb(base64) 
+    } catch (error) {
+        snack.error("Video não encontrado")
+        navigate("/")
+    }
+    loading.hide()
+  }
+
+  function encodeImageFileAsURL(element: File) {
+    var file = element;
+    var reader = new FileReader();
+    reader.onloadend = function () {
+      if (typeof reader.result === "string") {
+        setBase64Thumb(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
 
   const validate = () => {
-    if (!video) {
-      snack.error("A video is needed");
-      return true;
-    }
-
-    if (video.type !== "video/mp4") {
-      snack.error("The video need to be of type .mp4");
-      return true;
-    }
-
-    if (video.size > 100000000) {
-      snack.error("The video have to be at max 100mb");
-      return true;
-    }
-
-    if (!thumb) {
-      snack.error("A thumb is needed");
-      return true;
-    }
-
-    if (thumb.type !== "image/png" && thumb.type !== "image/jpeg" && thumb.type !== "image/gif") {
+    if (thumb && thumb.type !== "image/png" && thumb.type !== "image/jpeg" && thumb.type !== "image/gif") {
       snack.error("The thumb need to be of type .jpg or png");
       return true;
     }
 
-    if (thumb.size > 5000000) {
+    if (thumb && thumb.size > 5000000) {
       snack.error("The thumb have to be at max 5mb");
       return true;
     }
 
-    if (!title) {
+    if (title && !title) {
       setTitleError("A title is needed");
       return true;
     }
 
-    if (title.length < 3) {
+    if (title && title.length < 3) {
       setTitleError("A title need to have at least 3 characteres");
       return true;
     }
 
-    if (title.length > 30) {
+    if (title && title.length > 30) {
       setTitleError("A title need to have at max 30 characteres");
       return true;
     }
@@ -88,30 +109,23 @@ export const Upload = () => {
     return false;
   };
 
-  function encodeImageFileAsURL(element: File, isThumb: boolean) {
-    var file = element;
-    var reader = new FileReader();
-    reader.onloadend = function () {
-      if (typeof reader.result === "string") {
-        if (isThumb) setBase64Thumb(reader.result);
-        else setBase64Video(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  const upload = async () => {
-    if (validate() || !video || !thumb)
-        return 
-    loading.show();
+  const edit = async () => {
+    if(validate())
+      return
+    loading.show()
     try {
-        const id = await UploadVideo({title, description, video, thumbnail: thumb})
-        navigate(`/video/${id}`)
+      const body : any = {id: Number(id)}
+      if(title) body.title = title
+      if(description) body.description = description
+      if(thumb) body.thumbnail = thumb
+      await EditVideo(body)
+      snack.success("Video editado com sucesso")
+      navigate(`/video/${id}`)
     } catch (error) {
-        snack.error("Erro ao enviar video")
+      
     }
-    loading.hide();
-  };
+    loading.hide()
+  }
 
   return (
     <>
@@ -140,7 +154,9 @@ export const Upload = () => {
               onClick={() => setTitleError("")}
               error={Boolean(titleError)}
             />
-            <Typography sx={{color: 'red', fontSize: '12px'}}>{titleError}</Typography>
+            <Typography sx={{ color: "red", fontSize: "12px" }}>
+              {titleError}
+            </Typography>
           </Box>
           <Box sx={{ mt: "20px" }}>
             <Typography>Video Description</Typography>
@@ -166,7 +182,9 @@ export const Upload = () => {
               error={Boolean(descriptionError)}
               onClick={() => setDescriptionError("")}
             />
-            <Typography sx={{color: 'red', fontSize: '12px'}}>{descriptionError}</Typography>
+            <Typography sx={{ color: "red", fontSize: "12px" }}>
+              {descriptionError}
+            </Typography>
           </Box>
         </Box>
         <Box
@@ -209,23 +227,6 @@ export const Upload = () => {
         <Button
           variant="contained"
           sx={{
-            color: "#FF7551",
-            background: "#FFF",
-            borderRadius: "5px",
-            width: "25%",
-            textTransform: "none",
-            "&.MuiButtonBase-root:hover": {
-              background: "#FFF",
-            },
-            p: "10px",
-          }}
-          onClick={() => videoRef.current?.click()}
-        >
-          Select Video
-        </Button>
-        <Button
-          variant="contained"
-          sx={{
             color: "#FFF",
             background: "#FF7551",
             borderRadius: "5px",
@@ -235,25 +236,11 @@ export const Upload = () => {
               background: "#FF7551",
             },
             p: "10px",
-            ml: "15px",
           }}
-          onClick={upload}
+          onClick={edit}
         >
-          Upload Video
+          Edit Video
         </Button>
-      </Box>
-      <Box sx={{ width: "70%", mt: "30px" }}>
-        <Typography sx={{ mb: "10px" }}>Preview</Typography>
-        <MainVideo
-          createdAt={new Date()}
-          createdBy={userData}
-          deslikesCount={0}
-          likesCount={0}
-          videoUrl={base64Video}
-          title={title}
-          viewsCount={0}
-          description={description}
-        />
       </Box>
       <input
         type="file"
@@ -263,21 +250,8 @@ export const Upload = () => {
         onChange={(e) => {
           const file = e.target.files ? e.target.files[0] : null;
           if (file) {
-            encodeImageFileAsURL(file, true);
+            encodeImageFileAsURL(file);
             setThumb(file);
-          }
-        }}
-      />
-      <input
-        type="file"
-        style={{ display: "none" }}
-        ref={videoRef}
-        accept="video/mp4"
-        onChange={(e) => {
-          const file = e.target.files ? e.target.files[0] : null;
-          if (file) {
-            encodeImageFileAsURL(file, false);
-            setVideo(file);
           }
         }}
       />

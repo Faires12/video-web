@@ -78,12 +78,12 @@ export const PlaylistModal = ({
     }
 
     if(description && description.length < 5 ){
-        snack.error("Title has to be at least 5 characteres")
+        snack.error("Description has to be at least 5 characteres")
         return false
     }
 
     if(description && description.length > 25){
-        snack.error("Title has to be at max 25 characteres")
+        snack.error("Description has to be at max 25 characteres")
         return false
     }
 

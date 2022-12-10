@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import { AppBar, TextField, Link, IconButton, Menu, MenuItem } from "@mui/material";
 import { Box } from "@mui/system";
 import SearchIcon from "@mui/icons-material/Search";
@@ -19,6 +19,7 @@ const Header = ({ drawerWidth, setShowMobile }: Props) => {
   const appBarRef = useRef<HTMLDivElement>(null);
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
   const navigate = useNavigate()
+  const [query, setQuery] = useState("")
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -93,11 +94,25 @@ const Header = ({ drawerWidth, setShowMobile }: Props) => {
             InputProps={{
               endAdornment: (
                 <SearchIcon
-                  sx={{ color: "#FFF", transform: "rotate(90deg)" }}
+                  sx={{ color: "#FFF", transform: "rotate(90deg)", cursor: 'pointer' }}
+                  onClick={() => {
+                    if (query) {
+                      setQuery("")
+                      window.location.href = `/search?query=${query}`
+                    }
+                  }}
                 />
               ),
             }}
             placeholder="Search"
+            onChange={(e) => setQuery(e.target.value)}
+            value={query}
+            onKeyDown={(e: any) => {
+              if (e.key === "Enter" && query) {
+                setQuery("")
+                window.location.href = `/search?query=${query}`
+              }
+            }}
           />
           {isLogged() ? (
             <>

@@ -11,6 +11,8 @@ import { Profile } from "./pages/Profile";
 import { createTheme, ThemeProvider } from "@mui/material";
 import { Following } from "./pages/Following";
 import { Home } from "./pages/Home";
+import { Edit } from "./pages/Edit";
+import { Search } from "./pages/Search";
 
 function App() {
   const theme = createTheme({
@@ -30,8 +32,10 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/video/:id" element={<Video />} />
                   <Route path="/upload" element={<Upload />} />
+                  <Route path="/edit/:id" element={<Edit />} />
                   <Route path="/following" element={<Following />} />
                   <Route path="/profile/:email" element={<Profile />} />
+                  <Route path="/search" element={<Search />} />
                 </Routes>
               </Layout>
             </ModalProvider>

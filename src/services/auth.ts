@@ -30,6 +30,7 @@ export async function Login(email: string, password: string) {
     const token = await post("/login", { email, password });
     localStorage.setItem("token", token);
   } catch (error) {
+    doLogout()
     throw error;
   }
 }

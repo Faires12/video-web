@@ -89,7 +89,7 @@ export const VideoList = ({
                 borderRadius: "6px",
               }}
             ></Box>
-            <Box sx={{ display: "flex", alignItems: "center", mt: "5px" }}>
+            <Box sx={{ display: "flex", mt: "10px" }}>
               {showCreatorName && (
                 <Box
                   component="img"
@@ -102,31 +102,46 @@ export const VideoList = ({
                   }}
                 />
               )}
-              <Box sx={{ ml: showCreatorName ? "10px" : "0" }}>
+              <Box sx={{ ml: showCreatorName ? "10px" : "0", }}>
                 <Typography>{video.title}</Typography>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Box sx={{ display: {xs: 'none', md: 'block'}, alignItems: "center" }}>
                   {showCreatorName && (
                     <Typography sx={{ fontSize: "13px", color: "rgba(183, 185, 210, 0.7)"}}>
-                      {video.created_by.name} •{" "}
+                      {video.created_by.name} 
                     </Typography>
                   )}
+                  <Box sx={{display: 'flex'}}>
                   <Typography
-                    sx={{ fontSize: "13px", ml: showCreatorName ? "5px" : "0", color: "rgba(183, 185, 210, 0.7)"}}
+                    sx={{ fontSize: "13px", color: "rgba(183, 185, 210, 0.7)"}}
                   >
-                    {video.viewsCount} views •{" "}
+                    {video.viewsCount} views 
                   </Typography>
                   <Typography
-                    sx={{ ml: "5px", fontSize: "12px", color: "rgba(183, 185, 210, 0.7)"}}
+                    sx={{ ml: "5px", fontSize: "13px", color: "rgba(183, 185, 210, 0.7)"}}
+                  >
+                    • {format(video.createdAt)}
+                  </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ display: {xs: 'block', md: 'none'}}}>
+                  <Typography
+                    sx={{ fontSize: "13px", color: "rgba(183, 185, 210, 0.7)"}}
+                  >
+                    {video.viewsCount} views
+                  </Typography>
+                  <Typography
+                    sx={{ fontSize: "12px", color: "rgba(183, 185, 210, 0.7)"}}
                   >
                     {format(video.createdAt)}
                   </Typography>
                 </Box>
               </Box>
+              
             </Box>
           </Box>
         ))}
       </Box>
-      {videosData.length % rows === 0 && !hideLoadMore && (
+      {videosData.length % rows === 0 && !hideLoadMore && videosData.length > 0 && (
         <Box sx={{ display: "flex", width: "100%", justifyContent: "center" }}>
           <Button
             variant="contained"

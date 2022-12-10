@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Box } from "@mui/system";
-import { Typography } from "@mui/material";
+import { IconButton, Menu, MenuItem } from "@mui/material";
 import MainVideo from "../../components/MainVideo";
-import { getRelatedVideos, getVideo, VideoData } from "../../services/video";
+import { DeleteVideo, getRelatedVideos, getVideo, VideoData } from "../../services/video";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useLoading } from "../../context/loading_context";
 import { useSnack } from "../../context/snack_context";
@@ -15,6 +15,8 @@ import {
   Comment,
   CreateVideoComment,
   CreateVideoCommentResponse,
+  DeleteComment,
+  EditComment,
   GetComment,
   GetCommentResponses,
   GetVideoComments,
@@ -36,8 +38,12 @@ import {
 } from "../../services/playlist";
 import { PlaylistModal } from "../../components/PlaylistModal";
 import { useUserData } from "../../context/user_data_context";
-import { format } from "timeago.js";
+import SwitchVideoIcon from "@mui/icons-material/SwitchVideo";
 import { PlaylistCard } from "../../components/PlaylistCard";
+import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
+import QueueMusicOutlinedIcon from "@mui/icons-material/QueueMusicOutlined";
+import SettingsIcon from "@mui/icons-material/Settings";
+import { DeleteModal } from "../../components/DeleteModal";
 
 const Video = () => {
   const { id } = useParams();
@@ -57,36 +63,38 @@ const Video = () => {
   const [openPlaylistModal, setOpenPlaylistModal] = useState(false);
   const { userData } = useUserData();
   const [searchParams] = useSearchParams();
+  const [showMobileRelatedVideos, setShowMobileRelatedVideos] = useState(false);
+  const [showMobilePlaylist, setShowMobilePlaylist] = useState(false);
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false)
 
   useEffect(() => {
-    setVideoData(undefined)
-    setComments([])
-    setRelatedVideos([])
-    setCurrentPlaylist(undefined)
-    setVideosPage(1)
-  }, [id])
+    setVideoData(undefined);
+    setComments([]);
+    setRelatedVideos([]);
+    setCurrentPlaylist(undefined);
+    setVideosPage(1);
+    setShowMobilePlaylist(false);
+    setShowMobileRelatedVideos(false);
+  }, [id]);
 
   useEffect(() => {
     getVideoData();
   }, [userData]);
 
-  useEffect(() => {
-    getPlaylist();
-    HandleGetVideoComments(commentsPage, commentsRows);
-  }, [videoData]);
-
   const getPlaylist = async () => {
-    if (!videoData) return;
-
     const playlistId = searchParams.get("playlistId");
     if (!playlistId || isNaN(Number(playlistId))) return;
 
     loading.show();
     try {
       const res = await GetPlaylist(Number(playlistId));
-      if (res.videos.find((v) => v.id === videoData.id))
+      if (res.videos.find((v) => v.id === Number(id))) {
         setCurrentPlaylist(res);
+        setShowMobilePlaylist(true);
+      }
     } catch (error) {}
     loading.hide();
   };
@@ -102,6 +110,8 @@ const Video = () => {
       const res = await getVideo(Number(id));
       setVideoData(res);
       loadRelatedVideos(res.id, videosPage);
+      getPlaylist();
+      HandleGetVideoComments(commentsPage, commentsRows);
 
       if (isLogged() && userData.email !== res.created_by.email) {
         const subscription = await GetSubscription(res.created_by.email);
@@ -120,9 +130,9 @@ const Video = () => {
     try {
       loading.show();
       const res = await ManageSubscription(videoData?.created_by.email);
-      const video = await getVideo(videoData.id)
+      const video = await getVideo(videoData.id);
       setIsSubscribed(res);
-      setVideoData(video)
+      setVideoData(video);
     } catch (error) {}
     loading.hide();
   };
@@ -153,10 +163,10 @@ const Video = () => {
   };
 
   const HandleGetVideoComments = async (page: number, rows: number) => {
-    if (!videoData) return;
+
     try {
       loading.show();
-      const res = await GetVideoComments(videoData.id, page, rows);
+      const res = await GetVideoComments(Number(id), page, rows);
       const newComments = [...comments];
       for (const comment of res) {
         if (!newComments.find((c) => c.id === comment.id))
@@ -181,7 +191,7 @@ const Video = () => {
       const newComments = [...comments];
       if (!isResponse) {
         const index = newComments.findIndex((c) => c.id === commentId);
-        newComment.responses = newComments[index].responses
+        newComment.responses = newComments[index].responses;
         newComments[index] = newComment;
       } else {
         const mainIndex = newComments.findIndex((c) => c.id === mainCommentId);
@@ -201,7 +211,8 @@ const Video = () => {
     loading.show();
     try {
       const comment = await CreateVideoComment(Number(id), content);
-      await getVideoData();
+      const res = await getVideo(Number(id));
+      setVideoData(res);
       const newComments = [...comments];
       newComments.unshift(comment);
       setComments([...newComments]);
@@ -309,10 +320,89 @@ const Video = () => {
     loading.hide();
   };
 
+  const deleteVideo = async () => {
+    if(!videoData)
+      return
+    loading.show();
+    try {
+      await DeleteVideo(videoData.id)
+      snack.success("Video deletado com sucesso!")
+      navigate('/')
+    } catch (error) {}
+    loading.hide();
+  };
+
+  const handleEditComment = async (
+    commentId: number,
+    content: string,
+    isResponse: boolean,
+    mainCommentId?: number
+  ) => {
+    if (!isLogged()) return;
+
+    try {
+      loading.show();
+      const newComment = await EditComment(commentId, content)
+      const newComments = [...comments];
+      if (!isResponse) {
+        const index = newComments.findIndex((c) => c.id === commentId);
+        newComment.responses = newComments[index].responses;
+        newComments[index] = newComment;
+      } else {
+        const mainIndex = newComments.findIndex((c) => c.id === mainCommentId);
+        newComments[mainIndex].responses = newComments[
+          mainIndex
+        ].responses?.map((c) => {
+          if (c.id === newComment.id) c = newComment;
+          return c;
+        });
+      }
+      setComments([...newComments]);
+    } catch (error) {}
+    loading.hide();
+  };
+
+  const handleDeleteComment = async (
+    commentId: number,
+    isResponse: boolean,
+    mainCommentId?: number
+  ) => {
+    if (!isLogged()) return;
+
+    try {
+      loading.show();
+      await DeleteComment(commentId)
+      const newComments = [...comments];
+      if (!isResponse) {
+        const index = newComments.findIndex((c) => c.id === commentId);
+        newComments.splice(index, 1)
+        const res = await getVideo(Number(id));
+        setVideoData(res);
+      } else if(mainCommentId){
+        const mainIndex = newComments.findIndex((c) => c.id === mainCommentId);
+        const index = newComments[mainIndex].responses?.findIndex((c) => c.id === commentId);
+        index !== undefined && newComments[mainIndex].responses?.splice(index, 1)
+
+        const mainComment = await GetComment(mainCommentId)
+        mainComment.responses = newComments[mainIndex].responses
+        newComments[mainIndex] = mainComment
+      }
+      setComments([...newComments]);
+    } catch (error) {}
+    loading.hide();
+  };
+
   return (
     <>
-      <Box sx={{ width: "100%", display: "flex", pt: "20px", pl: {xs: '0', md: '40px'}}}>
-        <Box sx={{ width: {xs: '100%', md: '65%'} }}>
+      <Box
+        sx={{
+          width: "100%",
+          display: "flex",
+          pt: "20px",
+          pl: { xs: "0", md: "40px" },
+        }}
+      >
+        <Box sx={{ width: { xs: "100%", md: "65%" } }}>
           {videoData && (
             <MainVideo
               createdAt={videoData.createdAt}
@@ -329,25 +419,133 @@ const Video = () => {
               isSubscribed={isSubscribed}
             />
           )}
-          <AddToPhotosIcon
-            sx={{ mt: "30px", cursor: "pointer",           ml: {xs: '10px', md: '0'}
-          }}
-            titleAccess="Manage playlists"
-            onClick={OpenModal}
-          />
-          <CommentSection
-            commentCount={videoData?.commentCount ?? 0}
-            comments={comments}
-            handleChangeCommentEvaluation={handleChangeCommentEvaluation}
-            sendNewComment={sendNewComment}
-            loadCommentResponses={loadCommentResponses}
-            sendNewCommentResponse={sendNewCommentResponse}
-          />
-        </Box>
-        <Box sx={{ width: "35%", display: {xs: 'none', md: 'block'} }}>
-          {videoData && currentPlaylist && currentPlaylist.videos.length > 0 && (
-            <PlaylistCard playlist={currentPlaylist} currentVideo={videoData}/>
+          <Box sx={{ display: "flex", alignItems: "center", mt: "30px" }}>
+            {isLogged() && userData.email === videoData?.created_by.email && (
+              <>
+                <IconButton color="primary">
+                <SettingsIcon
+                  sx={{ cursor: "pointer", ml: { xs: "10px", md: "0" } }}
+                  titleAccess="Configurations"
+                  onClick={(e: any) => setAnchorEl(e.currentTarget)}
+                />
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={() => setAnchorEl(null)}
+                sx={{mt: '10px'}}
+              >
+                <MenuItem onClick={() => navigate(`/edit/${videoData?.id}`)}>Editar</MenuItem>
+                <MenuItem onClick={() => setOpenDeleteModal(true)}>Deletar</MenuItem>
+              </Menu>
+              </>
+            )}
+            <IconButton color="primary">
+              <AddToPhotosIcon
+                sx={{ cursor: "pointer", ml: { xs: "10px", md: "0" } }}
+                titleAccess="Manage playlists"
+                onClick={OpenModal}
+              />
+            </IconButton>
+            <IconButton color="primary">
+              <SwitchVideoIcon
+                sx={{
+                  cursor: "pointer",
+                  ml: currentPlaylist ? "30px" : "10px",
+                  display: { xs: "block", md: "none" },
+                }}
+                titleAccess="Show related videos"
+                onClick={() => {
+                  setShowMobilePlaylist(false);
+                  setShowMobileRelatedVideos(true);
+                }}
+              />
+            </IconButton>
+            {videoData && currentPlaylist && currentPlaylist.videos.length > 0 && (
+              <IconButton color="primary">
+                <QueueMusicOutlinedIcon
+                  sx={{
+                    cursor: "pointer",
+                    ml: "30px",
+                    display: { xs: "block", md: "none" },
+                  }}
+                  titleAccess="Show playlist"
+                  onClick={() => {
+                    setShowMobilePlaylist(true);
+                    setShowMobileRelatedVideos(false);
+                  }}
+                />
+              </IconButton>
+            )}
+          </Box>
+
+          {!showMobileRelatedVideos && !showMobilePlaylist && (
+            <CommentSection
+              commentCount={videoData?.commentCount ?? 0}
+              comments={comments}
+              handleChangeCommentEvaluation={handleChangeCommentEvaluation}
+              sendNewComment={sendNewComment}
+              loadCommentResponses={loadCommentResponses}
+              sendNewCommentResponse={sendNewCommentResponse}
+              handleEditComment={handleEditComment}
+              handleDeleteComment={handleDeleteComment}
+            />
           )}
+
+          {(showMobileRelatedVideos || showMobilePlaylist) && (
+            <Box
+              sx={{
+                width: "100%",
+                background: "rgba(255, 255, 255, 0.05)",
+                mt: "15px",
+                display: { xs: "block", md: "none" },
+              }}
+            >
+              <Box
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  p: "15px",
+                }}
+              >
+                <ClearOutlinedIcon
+                  onClick={() => {
+                    setShowMobileRelatedVideos(false);
+                    setShowMobilePlaylist(false);
+                  }}
+                />
+              </Box>
+              {showMobileRelatedVideos && (
+                <VideoList
+                  changePage={changePage}
+                  videosData={relatedVideos}
+                  flexDirection={"row"}
+                  rows={videosRows}
+                  showCreatorName={true}
+                />
+              )}
+              {videoData &&
+                currentPlaylist &&
+                currentPlaylist.videos.length > 0 &&
+                showMobilePlaylist && (
+                  <PlaylistCard
+                    playlist={currentPlaylist}
+                    currentVideo={videoData}
+                  />
+                )}
+            </Box>
+          )}
+        </Box>
+        <Box sx={{ width: "35%", display: { xs: "none", md: "block" } }}>
+          {videoData &&
+            currentPlaylist &&
+            currentPlaylist.videos.length > 0 && (
+              <PlaylistCard
+                playlist={currentPlaylist}
+                currentVideo={videoData}
+              />
+            )}
           <VideoList
             changePage={changePage}
             videosData={relatedVideos}
@@ -364,6 +562,13 @@ const Video = () => {
         video={videoData}
         handleVideoInPlaylist={handleVideoInPlaylist}
         handleCreatePlaylist={handleCreatePlaylist}
+      />
+      <DeleteModal
+        open={openDeleteModal}
+        close={() => setOpenDeleteModal(false)}
+        okClick={deleteVideo}
+        title="Deltar vídeo"
+        description="Tem certeza que quer deletar o vídeo?"
       />
     </>
   );
