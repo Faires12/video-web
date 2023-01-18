@@ -123,14 +123,15 @@ const DrawerContent = () => {
 
 interface Props {
   drawerWidth: number;
+  headerHeight: number
 }
 
-const LeftPanel = ({ drawerWidth }: Props) => {
+const LeftPanel = ({ drawerWidth, headerHeight }: Props) => {
   const [showMobile, setShowMobile] = useState(false);
 
   return (
     <>
-      <Header drawerWidth={drawerWidth} setShowMobile={setShowMobile} />
+      <Header drawerWidth={drawerWidth} setShowMobile={setShowMobile} headerHeight={headerHeight}/>
       <Box>
         <Drawer
           variant="temporary"

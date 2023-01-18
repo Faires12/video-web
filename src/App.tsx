@@ -13,6 +13,8 @@ import { Following } from "./pages/Following";
 import { Home } from "./pages/Home";
 import { Edit } from "./pages/Edit";
 import { Search } from "./pages/Search";
+import { Chats } from "./pages/Chats";
+import { SocketProvider } from "./context/socket_context";
 
 function App() {
   const theme = createTheme({
@@ -23,25 +25,28 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <LoadingProvider>
-        <SnackProvider>
-          <UserDataProvider>
-            <ModalProvider>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/video/:id" element={<Video />} />
-                  <Route path="/upload" element={<Upload />} />
-                  <Route path="/edit/:id" element={<Edit />} />
-                  <Route path="/following" element={<Following />} />
-                  <Route path="/profile/:email" element={<Profile />} />
-                  <Route path="/search" element={<Search />} />
-                </Routes>
-              </Layout>
-            </ModalProvider>
-          </UserDataProvider>
-        </SnackProvider>
-      </LoadingProvider>
+      <SocketProvider>
+        <LoadingProvider>
+          <SnackProvider>
+            <UserDataProvider>
+              <ModalProvider>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/video/:id" element={<Video />} />
+                    <Route path="/upload" element={<Upload />} />
+                    <Route path="/edit/:id" element={<Edit />} />
+                    <Route path="/following" element={<Following />} />
+                    <Route path="/profile/:email" element={<Profile />} />
+                    <Route path="/search" element={<Search />} />
+                    <Route path="/chats" element={<Chats />} />
+                  </Routes>
+                </Layout>
+              </ModalProvider>
+            </UserDataProvider>
+          </SnackProvider>
+        </LoadingProvider>
+      </SocketProvider>
     </ThemeProvider>
   );
 }

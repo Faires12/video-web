@@ -10,10 +10,11 @@ import { useNavigate } from "react-router-dom";
 
 interface Props {
   drawerWidth: number;
+  headerHeight: number
   setShowMobile(value: boolean): void;
 }
 
-const Header = ({ drawerWidth, setShowMobile }: Props) => {
+const Header = ({ drawerWidth, setShowMobile, headerHeight }: Props) => {
   const modal = useAuthenticationModal();
   const { userData, setUserData } = useUserData();
   const appBarRef = useRef<HTMLDivElement>(null);
@@ -58,7 +59,7 @@ const Header = ({ drawerWidth, setShowMobile }: Props) => {
           background: "#00040F",
           width: "100%",
           display: "flex",
-          padding: "20px",
+          height: `${headerHeight}px`,
           alignItems: "center",
         }}
       >
