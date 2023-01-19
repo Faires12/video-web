@@ -5,7 +5,8 @@ export interface MessageInfo{
     content: string
     created_by: UserData
     chat: ChatInfo
-    createdAt: Date
+    createdAt: string
+    fileRef?: string
 }
 
 export interface ChatInfo{

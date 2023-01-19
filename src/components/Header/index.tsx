@@ -12,9 +12,10 @@ interface Props {
   drawerWidth: number;
   headerHeight: number
   setShowMobile(value: boolean): void;
+  hideSideBar: boolean
 }
 
-const Header = ({ drawerWidth, setShowMobile, headerHeight }: Props) => {
+const Header = ({ drawerWidth, setShowMobile, headerHeight, hideSideBar }: Props) => {
   const modal = useAuthenticationModal();
   const { userData, setUserData } = useUserData();
   const appBarRef = useRef<HTMLDivElement>(null);
@@ -49,8 +50,8 @@ const Header = ({ drawerWidth, setShowMobile, headerHeight }: Props) => {
     <AppBar
       position="sticky"
       sx={{
-        width: { xs: "100%", lg: `calc(100% - ${drawerWidth}px)` },
-        ml: { xs: "0", lg: `${drawerWidth}px` },
+        width: { xs: "100%", lg: hideSideBar ? '100%' : `calc(100% - ${drawerWidth}px)` },
+        ml: { xs: "0", lg: hideSideBar ? '0' : `${drawerWidth}px` },
       }}
       ref={appBarRef}
     >
@@ -68,7 +69,7 @@ const Header = ({ drawerWidth, setShowMobile, headerHeight }: Props) => {
           aria-label="open drawer"
           edge="start"
           onClick={() => setShowMobile(true)}
-          sx={{ mr: 2, display: { xs: "block", lg: "none" } }}
+          sx={{ mr: 2, display: { xs: "block", lg: hideSideBar ? 'block' : "none" } }}
         >
           <MenuIcon />
         </IconButton>

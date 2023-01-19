@@ -20,7 +20,11 @@ import {
   PlaylistData,
 } from "../../services/playlist";
 
-const DrawerContent = () => {
+interface ContentProps{
+  setShowMobile(value: boolean): void;
+}
+
+const DrawerContent = ({setShowMobile}: ContentProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [openPlaylists, setOpenPlaylists] = useState(false);
@@ -73,7 +77,10 @@ const DrawerContent = () => {
                 sx={{ px: "20px", py: "10px" }}
                 onClick={() => {
                   if (nav.link === "/playlists") OpenModal();
-                  else navigate(nav.link);
+                  else {
+                    setShowMobile(false)
+                    navigate(nav.link);
+                  }                
                 }}
               >
                 <ListItemIcon
@@ -124,14 +131,15 @@ const DrawerContent = () => {
 interface Props {
   drawerWidth: number;
   headerHeight: number
+  hideSideBar: boolean
 }
 
-const LeftPanel = ({ drawerWidth, headerHeight }: Props) => {
+const LeftPanel = ({ drawerWidth, headerHeight, hideSideBar }: Props) => {
   const [showMobile, setShowMobile] = useState(false);
 
   return (
     <>
-      <Header drawerWidth={drawerWidth} setShowMobile={setShowMobile} headerHeight={headerHeight}/>
+      <Header drawerWidth={drawerWidth} setShowMobile={setShowMobile} headerHeight={headerHeight} hideSideBar={hideSideBar}/>
       <Box>
         <Drawer
           variant="temporary"
@@ -142,11 +150,11 @@ const LeftPanel = ({ drawerWidth, headerHeight }: Props) => {
             sx: {
               border: "none",
               width: drawerWidth,
-              display: { xs: "block", lg: "none" },
+              display: { xs: "block", lg: hideSideBar ? "block" : "none" },
             },
           }}
         >
-          <DrawerContent />
+          <DrawerContent setShowMobile={setShowMobile}/>
         </Drawer>
         <Drawer
           variant="permanent"
@@ -155,14 +163,14 @@ const LeftPanel = ({ drawerWidth, headerHeight }: Props) => {
             sx: {
               border: "none",
               width: drawerWidth,
-              display: { xs: "none", lg: "block" },
+              display: { xs: "none", lg: hideSideBar ? "none" : "block"  },
             },
           }}
           ModalProps={{
             keepMounted: true,
           }}
         >
-          <DrawerContent />
+          <DrawerContent setShowMobile={setShowMobile}/>
         </Drawer>
       </Box>
     </>
