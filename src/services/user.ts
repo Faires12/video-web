@@ -1,4 +1,4 @@
-import { del, get, put } from "./generic"
+import { del, get, put, post } from "./generic"
 
 export interface UserData{
     email: string
@@ -10,6 +10,21 @@ export interface UserData{
 interface EditUserInterface{
     name?: string
     avatar?: File
+}
+
+interface SearchUsersInterface{
+    search: string
+    page: number
+    rows: number
+}
+
+export async function searchUsers({search, page, rows}: SearchUsersInterface) : Promise<UserData[]>{
+    try {
+        const userDatas = await post(`/user/search?page=${page}&rows=${rows}`, {search})
+        return userDatas
+    } catch (error) {
+        throw error
+    }
 }
 
 export async function GetLoggedUserData() : Promise<UserData>{
