@@ -16,6 +16,7 @@ export interface ChatInfo {
   id: number;
   groupName?: string;
   groupImage?: string;
+  isTyping?: boolean
 }
 
 export async function getUserChats(): Promise<ChatInfo[]> {

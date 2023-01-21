@@ -1,9 +1,11 @@
-import { Button } from "@mui/material";
+import { Button, Typography } from "@mui/material";
 import { Box } from "@mui/system";
 import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChatBody } from "../../components/ChatBody";
 import { CreateChatModal } from "../../components/CreateChatModal";
 import { useLoading } from "../../context/loading_context";
+import { useNotification } from "../../context/notification_context";
 import { useSnack } from "../../context/snack_context";
 import { useSocket } from "../../context/socket_context";
 import { useUserData } from "../../context/user_data_context";
@@ -37,6 +39,8 @@ export const Chats = () => {
   const newMessagesNumber = useRef<number>(0);
   const [openCreateChatModal, setOpenCreateChatModal] = useState(false);
   const snack = useSnack()
+  const [searchParams, setSearchParams] = useSearchParams();
+  const notification = useNotification()
 
   useEffect(() => {
     getChats();
@@ -67,7 +71,14 @@ export const Chats = () => {
         newChat.messages.unshift(message);
         setSelectedChat({ ...newChat });
         newMessagesNumber.current += 1;
+      } else {
+        notification.show(message, () => {
+          const chat = chats.find(c => c.id === message.chat.id)
+          chat && setSelectedChat(chat)
+          chat && handleClickNewChat(chat)
+        })
       }
+
       const index = chats.findIndex(chat => chat.id === message.chat.id)
       if(index >= 0){
         const chat = chats[index]
@@ -79,7 +90,6 @@ export const Chats = () => {
     });
 
     socket.on("other_typing", (res: TypingResponse) => {
-      if (!selectedChat || res.chat.id !== selectedChat.id) return;
       let newTypingString = "";
 
       const users = [...res.users];
@@ -93,7 +103,16 @@ export const Chats = () => {
       }
       if (newTypingString)
         newTypingString += `${users.length === 1 ? "is" : "are"} typing`;
-      setTypingString(newTypingString);
+
+      const newChats = chats 
+      const chat = newChats.find(c => c.id === res.chat.id)
+      if(chat){
+        chat.isTyping = Boolean(newTypingString)
+        setChats([...newChats])
+      }
+      
+      if (selectedChat && res.chat.id === selectedChat.id) 
+          setTypingString(newTypingString);
     });
   }, [chats, selectedChat]);
 
@@ -102,6 +121,12 @@ export const Chats = () => {
     try {
       const res = await getUserChats();
       setChats(res);
+      const chatId = searchParams.get("chatId")
+      if(chatId){
+        const chat = res.find(c => c.id === Number(chatId))
+        chat && setSelectedChat(chat)
+        chat && handleClickNewChat(chat)
+      }    
     } catch (error) {}
     loading.hide();
   };
@@ -201,7 +226,8 @@ export const Chats = () => {
             flexDirection: "column",
             borderRight: "1px solid white",
             borderLeft: "1px solid white",
-            overflow: 'auto'
+            overflow: 'auto',
+            width: '20%'
           }}
         >
           <Box
@@ -246,11 +272,25 @@ export const Chats = () => {
                   mr: "10px",
                 }}
               />
-              {chat.isPersonal
-                ? getPersonalChatName(chat)
-                : chat.groupName
-                ? chat.groupName
-                : ""}
+              <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                <Typography sx={{wordBreak: 'break-word'}}>
+                {chat.isPersonal
+                  ? getPersonalChatName(chat)
+                  : chat.groupName
+                  ? chat.groupName
+                  : ""}
+                </Typography>
+                {
+                  chat.isTyping && 
+                  <Box
+                    component="img"
+                    src={"/loading.gif"}
+                    sx={{
+                      width: "25px",
+                    }}
+                  />
+                } 
+              </Box>
             </Box>
           ))}
         </Box>
