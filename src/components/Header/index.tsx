@@ -149,7 +149,7 @@ const Header = ({
                         }}
                         onClick={() => {
                           setNotificationsAnchor(null)
-                          window.location.href = `/chats?chatId=${not.chat.id}`
+                          navigate(`/chats?chatId=${not.chat.id}`)
                         }}
                       >
                         <Box
