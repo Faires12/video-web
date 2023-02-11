@@ -1,14 +1,20 @@
-import { ChatInfo, MessageInfo } from "../services/chat";
-import React, { createContext, useContext, useState, useRef } from "react";
+import { ChatInfo, ChatNotification, getChatNotifications, MessageInfo } from "../services/chat";
+import React, { createContext, useContext, useState, useRef, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import { useUserData } from "./user_data_context";
 
 export interface NotificationInfo {
-  show(message: MessageInfo, cb?: () => void): void;
+  chatNotifications: ChatNotification[]
+  newMessage: MessageInfo | null
+  show: (chatNotification: ChatNotification) => void
+  clear: (ids: number[]) => void
 }
 
 const notificationDefault: NotificationInfo = {
-  show: (message: MessageInfo) => {},
+  chatNotifications: [],
+  newMessage: null,
+  show: () => {},
+  clear: () => {}
 };
 
 const NotificationContext =
@@ -23,42 +29,66 @@ interface Props {
 }
 
 export function NotificationProvider({ children }: Props) {
-  const [message, setMessage] = useState<MessageInfo | null>(null);
   const [callback, setCallback] = useState<() => void>()
   const timeout = useRef<NodeJS.Timeout>();
   const {userData} = useUserData()
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
+  const [chatNotifications, setChatNotifications] = useState<ChatNotification[]>([]) 
+  const [newMessage, setNewMessage] = useState<MessageInfo | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  const show = (msg: MessageInfo, cb?: () => void) => {
+  useEffect(() => {
+    GetChatNotifications()
+  }, [])
+
+  useEffect(() => {
+    if(!newMessage) return
+    console.log(audioRef.current)
+    if(audioRef.current){
+      audioRef.current.play()
+    }
     clearTimeout(timeout.current);
-    setMessage(msg);
-    cb && setCallback(() => cb)
     timeout.current = setTimeout(() => {
-      setMessage(null);
+      setNewMessage(null);
     }, 3000);
-  };
+  }, [newMessage])
 
-  const getPersonalChatName = (chat: ChatInfo) => {
-    for (const user of chat.users) {
-      if (user.email === userData.email) continue;
-      return user.name;
+  const GetChatNotifications = async () => {
+    try{
+      const res = await getChatNotifications()
+      setChatNotifications(res)
+    } catch(e){}
+  }
+
+  const show = (notification: ChatNotification) => {
+    const newNotifications = chatNotifications
+    const index = newNotifications.findIndex(not => not.id === notification.id) 
+    if(index >= 0){
+      newNotifications.splice(index, 1)
+    } 
+    newNotifications.unshift(notification)
+    setChatNotifications([...newNotifications])
+    notification.messages.length && setNewMessage({
+      ...notification.messages[notification.messages.length - 1],
+      chat: notification.chat
+    })
+  }
+
+  const clear = (ids: number[]) => {
+    const newNotifications = chatNotifications
+    for(const id of ids){
+      const index = chatNotifications.findIndex(not => not.id === id)
+      if(index === -1) continue
+      if(index >= 0){
+        newNotifications.splice(index, 1)
+      } 
     }
-
-    return "";
-  };
-
-  const getPersonalChatAvatar = (chat: ChatInfo) => {
-    for (const user of chat.users) {
-      if (user.email === userData.email) continue;
-      return user.avatar;
-    }
-
-    return "";
-  };
+    setChatNotifications([...newNotifications])
+  }
 
   return (
-    <NotificationContext.Provider value={{ show }}>
-      {message && <Box
+    <NotificationContext.Provider value={{ chatNotifications, newMessage, show, clear }}>
+      {newMessage && <Box
         sx={{
           position: "absolute",
           bottom: "0",
@@ -74,13 +104,14 @@ export function NotificationProvider({ children }: Props) {
         }}
         onClick={() => {
             callback && callback()
-            setMessage(null)
+            setNewMessage(null)
         }}
       >
         <Box
           component="img"
           sx={{ width: "40%" }}
-          src={`${baseUrl}/${message.chat.isPersonal ? getPersonalChatAvatar(message.chat) : message.chat.groupImage}`}
+          src={`${baseUrl}/${newMessage.chat?.isPersonal ? 
+            newMessage.created_by.avatar : newMessage.chat?.groupImage}`}
         />
         <Box
           sx={{
@@ -91,13 +122,19 @@ export function NotificationProvider({ children }: Props) {
             flexGrow: "1",
           }}
         >
-          <Typography>{message.chat.isPersonal ? getPersonalChatName(message.chat) : message.chat.groupName}</Typography>
+          <Typography>{newMessage.chat?.isPersonal ? 
+          newMessage.created_by.name : newMessage.chat?.groupName}</Typography>
           <Typography sx={{wordBreak: 'break-word'}}>
-            {message.content.replace(/(.{30})..+/, "$1…")}
+            {newMessage.content.replace(/(.{30})..+/, "$1…")}
           </Typography>
         </Box>
       </Box>}
       {children}
+      <Box
+        component="audio"
+        ref={audioRef}
+        src="./notification.wav"
+      />
     </NotificationContext.Provider>
   );
 }

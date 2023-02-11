@@ -2,6 +2,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import GroupIcon from '@mui/icons-material/Group';
+import ChatIcon from '@mui/icons-material/Chat';
 
 interface Navigation{
     text: string
@@ -29,5 +30,10 @@ export const navMenu : Navigation[] = [
         text: 'New Upload',
         link: '/upload',
         icon: <FileUploadIcon/>
+    },
+    {
+        text: 'Chats',
+        link: '/chats',
+        icon: <ChatIcon/>
     },
 ]

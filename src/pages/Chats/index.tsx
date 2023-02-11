@@ -11,6 +11,8 @@ import { useSocket } from "../../context/socket_context";
 import { useUserData } from "../../context/user_data_context";
 import {
   ChatInfo,
+  ChatNotification,
+  clearChatNotifications,
   createChat,
   getChatMessages,
   getUserChats,
@@ -40,7 +42,7 @@ export const Chats = () => {
   const [openCreateChatModal, setOpenCreateChatModal] = useState(false);
   const snack = useSnack()
   const [searchParams, setSearchParams] = useSearchParams();
-  const notification = useNotification()
+  const {chatNotifications, newMessage, clear} = useNotification()
 
   useEffect(() => {
     getChats();
@@ -51,6 +53,20 @@ export const Chats = () => {
       socket.off("other_typing");
     };
   }, []);
+
+  useEffect(() => {
+    if(!newMessage) return
+
+    const index = chats.findIndex(chat => chat.id === newMessage.chat?.id)
+    if(index === -1) return
+
+    const chat = chats[index]
+    const newChats = chats
+    newChats.splice(index, 1)
+    newChats.unshift(chat)
+    setChats([...newChats])
+    
+  }, [newMessage]);
 
   useEffect(() => {
     socket.off("recieve_chat");
@@ -65,28 +81,16 @@ export const Chats = () => {
     socket.off("recieve_message");
     socket.off("other_typing");
 
-    socket.on("recieve_message", (message: MessageInfo) => {
-      if (selectedChat && message.chat.id === selectedChat.id) {
-        const newChat = selectedChat;
-        newChat.messages.unshift(message);
-        setSelectedChat({ ...newChat });
-        newMessagesNumber.current += 1;
-      } else {
-        notification.show(message, () => {
-          const chat = chats.find(c => c.id === message.chat.id)
-          chat && setSelectedChat(chat)
-          chat && handleClickNewChat(chat)
-        })
-      }
+    if(selectedChat)
+      socket.emit("enter_chat", selectedChat.id)
 
-      const index = chats.findIndex(chat => chat.id === message.chat.id)
-      if(index >= 0){
-        const chat = chats[index]
-        const newChats = chats
-        newChats.splice(index, 1)
-        newChats.unshift(chat)
-        setChats([...newChats])
-      }
+    socket.on("recieve_message", (message: MessageInfo) => {
+      if(!selectedChat) return
+
+      const newChat = selectedChat;
+      newChat.messages.unshift(message);
+      setSelectedChat({ ...newChat });
+      newMessagesNumber.current += 1;     
     });
 
     socket.on("other_typing", (res: TypingResponse) => {
@@ -126,6 +130,12 @@ export const Chats = () => {
         const chat = res.find(c => c.id === Number(chatId))
         chat && setSelectedChat(chat)
         chat && handleClickNewChat(chat)
+
+        const notification = chatNotifications.find(not => not.chat.id === Number(chatId))
+        if(notification){
+          await clearChatNotifications([notification.id])
+          clear([notification.id])
+        }   
       }    
     } catch (error) {}
     loading.hide();
@@ -162,6 +172,12 @@ export const Chats = () => {
       setPage(1);
       setTypingString("");
       newMessagesNumber.current = 0;
+
+      const notification = chatNotifications.find(not => not.chat.id === chat.id)
+      if(notification){
+        await clearChatNotifications([notification.id])
+        clear([notification.id])
+      }   
     } catch (error) {}
     loading.hide();
   };
@@ -203,6 +219,20 @@ export const Chats = () => {
       loading.hide()
     })
   }
+
+  const getNotificationsInChat = (chatId: number) => {
+    const chatNotification = chatNotifications.find(not => not.chat.id === chatId)
+    
+    if(!chatNotification)
+      return <></>
+
+    return (
+      <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', 
+      width: '25px', height: '25px', borderRadius: '50%', background: '#cc0000'}}>
+        {chatNotification.messages.length}
+      </Box>
+    )
+  } 
 
   return (
     <>
@@ -254,43 +284,47 @@ export const Chats = () => {
                 display: "flex",
                 alignItems: "center",
                 cursor: "pointer",
+                justifyContent: 'space-between'
               }}
               onClick={() => handleClickNewChat(chat)}
             >
-              <Box
-                component="img"
-                src={`${baseUrl}/${
-                  chat.isPersonal
-                    ? getPersonalChatAvatar(chat)
-                    : chat.groupImage
-                }`}
-                sx={{
-                  width: "30px",
-                  height: "30px",
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  mr: "10px",
-                }}
-              />
-              <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                <Typography sx={{wordBreak: 'break-word'}}>
-                {chat.isPersonal
-                  ? getPersonalChatName(chat)
-                  : chat.groupName
-                  ? chat.groupName
-                  : ""}
-                </Typography>
-                {
-                  chat.isTyping && 
-                  <Box
-                    component="img"
-                    src={"/loading.gif"}
-                    sx={{
-                      width: "25px",
-                    }}
-                  />
-                } 
+              <Box sx={{display: 'flex', alignItems: 'center'}}>
+                <Box
+                  component="img"
+                  src={`${baseUrl}/${
+                    chat.isPersonal
+                      ? getPersonalChatAvatar(chat)
+                      : chat.groupImage
+                  }`}
+                  sx={{
+                    width: "30px",
+                    height: "30px",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    mr: "10px",
+                  }}
+                />
+                <Box sx={{display: 'flex', flexDirection: 'column'}}>
+                  <Typography sx={{wordBreak: 'break-word'}}>
+                  {chat.isPersonal
+                    ? getPersonalChatName(chat)
+                    : chat.groupName
+                    ? chat.groupName
+                    : ""}
+                  </Typography>
+                  {
+                    chat.isTyping && 
+                    <Box
+                      component="img"
+                      src={"/loading.gif"}
+                      sx={{
+                        width: "25px",
+                      }}
+                    />
+                  } 
+                </Box>
               </Box>
+              {getNotificationsInChat(chat.id)}
             </Box>
           ))}
         </Box>

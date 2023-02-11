@@ -4,7 +4,7 @@ import { UserData } from "./user";
 export interface MessageInfo {
   content: string;
   created_by: UserData;
-  chat: ChatInfo;
+  chat?: ChatInfo;
   createdAt: string;
   fileRef?: string;
 }
@@ -18,6 +18,15 @@ export interface ChatInfo {
   groupImage?: string;
   isTyping?: boolean
 }
+
+export interface ChatNotification{
+  chat: ChatInfo
+  id: number
+  messages: MessageInfo[]
+  read: boolean
+  reciever: string
+}
+
 
 export async function getUserChats(): Promise<ChatInfo[]> {
   try {
@@ -66,6 +75,23 @@ export async function createChat({
       isPersonal: otherUsersEmails.length === 1,
     });
     return res;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getChatNotifications(): Promise<ChatNotification[]> {
+  try {
+    const res = await get("/chat/notifications");
+    return res;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function clearChatNotifications(chatNotificationsIds: number[]): Promise<void> {
+  try {
+    await post("/chat/notifications/clear", {chatNotificationsIds});
   } catch (error) {
     throw error;
   }

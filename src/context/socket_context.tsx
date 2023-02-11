@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { io, Socket } from "socket.io-client";
 import { isLogged } from '../services/auth';
-import { MessageInfo } from '../services/chat';
+import { ChatNotification, MessageInfo } from '../services/chat';
 import { useNotification } from './notification_context';
 
 
@@ -24,7 +24,7 @@ interface Props {
 
 export const SocketProvider = ({children}: Props) => {
     const [socket, setSocket] = useState<Socket>(io())
-    const notification = useNotification()
+    const {chatNotifications, show} = useNotification()
     const location = useLocation()
     const navigate = useNavigate()
 
@@ -40,16 +40,16 @@ export const SocketProvider = ({children}: Props) => {
     }, [])
 
     useEffect(() => {
-        socket.off("recieve_message");
+        socket.off("recieve_notification");
 
-        if(location.pathname === '/chats')
-            return
-
-        socket.on("recieve_message", (msg: MessageInfo) => {
-            console.log(msg)
-            notification.show(msg, () => navigate(`/chats?chatId=${msg.chat.id}`))
+        socket.on("recieve_notification", (notification: ChatNotification) => {
+            show(notification)
         })
-    }, [socket, location.pathname])
+    }, [chatNotifications])
+
+    useEffect(() => {
+        socket.emit("enter_chat", null)
+    }, [location.pathname])
 
     return (
         <SocketContext.Provider value={{socket}}>
