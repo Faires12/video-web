@@ -14,6 +14,7 @@ interface Props {
   flexDirection: "row" | "column";
   showCreatorName?: boolean;
   hideLoadMore?: boolean
+  returnVideo?(video: VideoData): void
 }
 
 export const VideoList = ({
@@ -24,7 +25,8 @@ export const VideoList = ({
   changePage,
   flexDirection,
   showCreatorName,
-  hideLoadMore
+  hideLoadMore,
+  returnVideo
 }: Props) => {
   const navigate = useNavigate();
   const baseUrl = process.env.REACT_APP_MEDIA_ENDPOINT;
@@ -77,7 +79,9 @@ export const VideoList = ({
               m: flexDirection === "row" ? {xs: "1%", md: '2%'} : "0",
               mt: flexDirection === "column" && index > 0 ? "15px" : "0",
             }}
-            onClick={() => navigate(`/video/${video.id}`)}
+            onClick={() => {
+              returnVideo ? returnVideo(video) : navigate(`/video/${video.id}`)
+            }}
           >
             <Box
               sx={{

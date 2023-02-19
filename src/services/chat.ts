@@ -1,12 +1,15 @@
 import { get, post } from "./generic";
 import { UserData } from "./user";
+import { VideoData } from "./video";
 
 export interface MessageInfo {
-  content: string;
+  content?: string;
   created_by: UserData;
   chat?: ChatInfo;
   createdAt: string;
   fileRef?: string;
+  videoRef?: VideoData
+  id: number
 }
 
 export interface ChatInfo {

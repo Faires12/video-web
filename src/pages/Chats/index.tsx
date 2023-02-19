@@ -19,6 +19,7 @@ import {
   MessageInfo,
 } from "../../services/chat";
 import { UserData } from "../../services/user";
+import { VideoData } from "../../services/video";
 
 interface TypingResponse {
   users: {
@@ -167,6 +168,7 @@ export const Chats = () => {
         page: 1,
         rows: rows,
       });
+
       chat.messages = res;
       setSelectedChat({ ...chat });
       setPage(1);
@@ -233,6 +235,22 @@ export const Chats = () => {
       </Box>
     )
   } 
+
+  const handleSetVideoReferenceEvaluation = (messageId: number, e: boolean | null,
+    likesCount?: number, deslikesCount?: number) => {
+    if(!selectedChat)
+      return
+
+    const newChat = selectedChat
+    const message = newChat.messages.find(msg => msg.id === messageId)
+    if(!message || !message.videoRef)
+      return
+
+    message.videoRef.evaluation = e
+    if(likesCount !== undefined) message.videoRef.likesCount = likesCount
+    if(deslikesCount !== undefined) message.videoRef.deslikesCount = deslikesCount
+    setSelectedChat({...newChat})
+  }
 
   return (
     <>
@@ -341,12 +359,19 @@ export const Chats = () => {
                   file: file,
                 });
               }}
+              sendVideoMessage={(video: VideoData) => {
+                socket.emit("new_message", {
+                  chatId: selectedChat?.id,
+                  videoId: video.id,
+                });
+              }}
               typingEvent={() => {
                 socket.emit("typing", {
                   id: selectedChat.id,
                   users: selectedChat.users,
                 });
               }}
+              handleSetVideoReferenceEvaluation={handleSetVideoReferenceEvaluation}
             />
           )}
         </Box>

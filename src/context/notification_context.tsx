@@ -125,7 +125,7 @@ export function NotificationProvider({ children }: Props) {
           <Typography>{newMessage.chat?.isPersonal ? 
           newMessage.created_by.name : newMessage.chat?.groupName}</Typography>
           <Typography sx={{wordBreak: 'break-word'}}>
-            {newMessage.content.replace(/(.{30})..+/, "$1…")}
+            {newMessage.content?.replace(/(.{30})..+/, "$1…")}
           </Typography>
         </Box>
       </Box>}

@@ -42,8 +42,7 @@ export const MainVideo = ({
   const navigate = useNavigate()
 
   return (
-    <Box sx={{ width: "100%", display: "flex", flexDirection: "column",           px: {xs: '10px', md: '0'}
-  }}>
+    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", px: {xs: '10px', md: '0'}}}>
       <Box
         component="video"
         src={videoUrl}

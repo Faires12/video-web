@@ -222,7 +222,7 @@ const CommentBox = ({
                     Reply
                   </Typography>
                 )}
-                <Typography
+                {userData.email === comment.created_by.email && <Typography
                   sx={{
                     fontSize: "12px",
                     ml: "10px",
@@ -232,7 +232,7 @@ const CommentBox = ({
                   onClick={changeToDelete}
                 >
                   Delete
-                </Typography>
+                </Typography>}
               </Box>
               {!isEditing ? (
                 <Typography

@@ -311,7 +311,7 @@ const Video = () => {
   ) => {
     loading.show();
     try {
-      const playlist = await CreatePlaylist({ title, description, videoId });
+      const playlist = await CreatePlaylist({ title, description: description ? description : undefined , videoId });
 
       const newPlaylists = playlists;
       newPlaylists.push(playlist);
