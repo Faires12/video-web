@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Box } from "@mui/system";
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import MainVideo from "../../components/MainVideo";
@@ -44,6 +44,7 @@ import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
 import QueueMusicOutlinedIcon from "@mui/icons-material/QueueMusicOutlined";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { DeleteModal } from "../../components/DeleteModal";
+import { useSocket } from "../../context/socket_context";
 
 const Video = () => {
   const { id } = useParams();
@@ -69,6 +70,34 @@ const Video = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const [openDeleteModal, setOpenDeleteModal] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const {publicSocket} = useSocket()
+  const startView = useRef<boolean>(false)
+  const viewTimeout = useRef<NodeJS.Timeout>()
+
+  useEffect(() => {
+    if(!videoData || startView.current || !videoRef.current)
+      return
+    publicSocket.emit("begin_video", videoData.id, (ok: boolean) => {
+      startView.current = ok
+      if(!ok)
+        return
+
+      videoRef.current?.play()
+      viewTimeout.current = setInterval(() => {
+        publicSocket.emit("ping_video", {videoId: videoData.id, currentTime: videoRef.current?.currentTime,
+        playbackRate: videoRef.current?.playbackRate}, 
+        (ended: boolean) => {
+          if(ended) clearTimeout(viewTimeout.current)
+        })
+      }, 1000)
+    })
+
+    return () => {
+      publicSocket.emit("end_video", videoData.id)
+      clearInterval(viewTimeout.current)
+    } 
+  }, [videoData]);
 
   useEffect(() => {
     setVideoData(undefined);
@@ -417,6 +446,7 @@ const Video = () => {
               handleChangeEvaluation={handleChangeEvaluation}
               handleSubscription={handleSubscription}
               isSubscribed={isSubscribed}
+              ref={videoRef}
             />
           )}
           <Box sx={{ display: "flex", alignItems: "center", mt: "30px" }}>

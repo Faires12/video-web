@@ -8,10 +8,12 @@ import { useNotification } from './notification_context';
 
 export interface SocketContext{
     socket: Socket
+    publicSocket: Socket
 }
 
 const SocketContext = createContext<SocketContext>({
-    socket: io() 
+    socket: io(),
+    publicSocket: io()
 })
 
 export function useSocket(){
@@ -24,6 +26,7 @@ interface Props {
 
 export const SocketProvider = ({children}: Props) => {
     const [socket, setSocket] = useState<Socket>(io())
+    const [publicSocket, setPublicSocket] = useState<Socket>(io())
     const {chatNotifications, show} = useNotification()
     const location = useLocation()
     const navigate = useNavigate()
@@ -37,6 +40,7 @@ export const SocketProvider = ({children}: Props) => {
             })
             setSocket(skt)
         }
+        setPublicSocket(io(`${process.env.REACT_APP_MEDIA_ENDPOINT}/public`))
     }, [])
 
     useEffect(() => {
@@ -52,7 +56,7 @@ export const SocketProvider = ({children}: Props) => {
     }, [location.pathname])
 
     return (
-        <SocketContext.Provider value={{socket}}>
+        <SocketContext.Provider value={{socket, publicSocket}}>
             {children}
         </SocketContext.Provider>
     )
