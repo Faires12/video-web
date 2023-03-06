@@ -13,7 +13,16 @@ export interface VideoData {
   title: string;
   viewsCount: number;
   commentCount: number;
+  duration: number
   evaluation?: boolean | null;
+}
+
+export interface HistoricData{
+  video: VideoData
+  watchedTime: number
+  user: UserData
+  lastUpdate: string
+  id: number
 }
 
 export async function getVideo(id: number): Promise<VideoData> {
@@ -67,6 +76,16 @@ export async function getUserVideos(email: string, page: number, rows: number, o
 export async function getRelatedVideos(videoId: number, page: number, rows: number): Promise<VideoData[]> {
   try {
     let url = `/video/related/${videoId}?page=${page}&rows=${rows}`
+    const res = await get(url);
+    return res;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getHistoricVideos(page: number, rows: number): Promise<HistoricData[]> {
+  try {
+    let url = `/video/historic?page=${page}&rows=${rows}`
     const res = await get(url);
     return res;
   } catch (error) {

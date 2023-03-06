@@ -283,6 +283,7 @@ export const ChatBody = ({
             <MenuItem
               onClick={() => {
                 fileRef.current?.click();
+                setAnchorEl(null)
               }}
             >
               Select file

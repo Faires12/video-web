@@ -16,6 +16,7 @@ import { Search } from "./pages/Search";
 import { Chats } from "./pages/Chats";
 import { SocketProvider } from "./context/socket_context";
 import { NotificationProvider } from "./context/notification_context";
+import { Historic } from "./pages/Historic";
 
 function App() {
   const theme = createTheme({
@@ -42,6 +43,7 @@ function App() {
                       <Route path="/profile/:email" element={<Profile />} />
                       <Route path="/search" element={<Search />} />
                       <Route path="/chats" element={<Chats />} />
+                      <Route path="/historic" element={<Historic />} />
                     </Routes>
                   </Layout>
                 </ModalProvider>

@@ -32,15 +32,25 @@ export const SocketProvider = ({children}: Props) => {
     const navigate = useNavigate()
 
     useEffect(() => {
-        if(process.env.REACT_APP_MEDIA_ENDPOINT && isLogged()){
-            const skt = io(process.env.REACT_APP_MEDIA_ENDPOINT, {
+        if(!process.env.REACT_APP_MEDIA_ENDPOINT)
+            return
+        const token = localStorage.getItem("token")
+
+        if(isLogged() && token){
+            const skt = io(`${process.env.REACT_APP_MEDIA_ENDPOINT}`, {
                 auth: {
-                    token: localStorage.getItem("token")
+                    token: token
                 }
             })
             setSocket(skt)
         }
-        setPublicSocket(io(`${process.env.REACT_APP_MEDIA_ENDPOINT}/public`))
+        
+        const publicSkt = io(`${process.env.REACT_APP_MEDIA_ENDPOINT}/public`, {
+            auth: {
+                token: isLogged() && token ? token : null
+            }
+        })
+        setPublicSocket(publicSkt)
     }, [])
 
     useEffect(() => {

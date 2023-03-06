@@ -12,7 +12,7 @@ export interface UserContextData{
 
 const UserContext = createContext<UserContextData>({
     userData: {},
-    setUserData: () => {}
+    setUserData: () => {},
 })
 
 export function useUserData(){
@@ -34,8 +34,11 @@ export const UserDataProvider = ({children}: Props) => {
     }, [location.pathname])
 
     const getUserData = async () => {
-        if(!isLogged())
+        if(!isLogged()){
+            setUserData({})
             return
+        }
+            
         loading.show()
         try {
             const res = await GetLoggedUserData()

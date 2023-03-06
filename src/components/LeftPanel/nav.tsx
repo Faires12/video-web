@@ -3,6 +3,7 @@ import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import GroupIcon from '@mui/icons-material/Group';
 import ChatIcon from '@mui/icons-material/Chat';
+import HistoryIcon from '@mui/icons-material/History';
 
 interface Navigation{
     text: string
@@ -35,5 +36,10 @@ export const navMenu : Navigation[] = [
         text: 'Chats',
         link: '/chats',
         icon: <ChatIcon/>
+    },
+    {
+        text: 'Historic',
+        link: '/historic',
+        icon: <HistoryIcon/>
     },
 ]

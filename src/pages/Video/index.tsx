@@ -72,32 +72,7 @@ const Video = () => {
   const [openDeleteModal, setOpenDeleteModal] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const {publicSocket} = useSocket()
-  const startView = useRef<boolean>(false)
   const viewTimeout = useRef<NodeJS.Timeout>()
-
-  useEffect(() => {
-    if(!videoData || startView.current || !videoRef.current)
-      return
-    publicSocket.emit("begin_video", videoData.id, (ok: boolean) => {
-      startView.current = ok
-      if(!ok)
-        return
-
-      videoRef.current?.play()
-      viewTimeout.current = setInterval(() => {
-        publicSocket.emit("ping_video", {videoId: videoData.id, currentTime: videoRef.current?.currentTime,
-        playbackRate: videoRef.current?.playbackRate}, 
-        (ended: boolean) => {
-          if(ended) clearTimeout(viewTimeout.current)
-        })
-      }, 1000)
-    })
-
-    return () => {
-      publicSocket.emit("end_video", videoData.id)
-      clearInterval(viewTimeout.current)
-    } 
-  }, [videoData]);
 
   useEffect(() => {
     setVideoData(undefined);
@@ -107,11 +82,25 @@ const Video = () => {
     setVideosPage(1);
     setShowMobilePlaylist(false);
     setShowMobileRelatedVideos(false);
-  }, [id]);
+
+    return () => {
+      console.log("exit")
+      publicSocket.emit("end_video")
+      clearInterval(viewTimeout.current)
+    }
+  }, [id, publicSocket]);
 
   useEffect(() => {
     getVideoData();
-  }, [userData]);
+  }, [userData, id, publicSocket]);
+
+  useEffect(() => {
+    videoRef.current?.addEventListener('loadeddata', () => {
+      const currentTime = searchParams.get("currentTime");
+      if(currentTime && videoRef.current)
+        videoRef.current.currentTime = Number(currentTime)
+    })
+  }, [videoData]);
 
   const getPlaylist = async () => {
     const playlistId = searchParams.get("playlistId");
@@ -128,14 +117,25 @@ const Video = () => {
     loading.hide();
   };
 
+  const PingVideo = () => {
+    publicSocket.emit("ping_video", {
+      currentTime: videoRef.current?.currentTime, 
+      playbackRate: videoRef.current?.playbackRate
+    }, (ended: boolean) => {
+      if(ended) clearInterval(viewTimeout.current)
+    })
+  }
+
   const getVideoData = async () => {
     try {
-      if (!id || isNaN(Number(id))) {
+      if (!id || isNaN(Number(id)) || videoData) {
         return;
       }
-      if (isLogged() && !userData.email) return;
+      
+      if (isLogged() && !userData.email) return
 
       loading.show();
+      
       const res = await getVideo(Number(id));
       setVideoData(res);
       loadRelatedVideos(res.id, videosPage);
@@ -146,6 +146,12 @@ const Video = () => {
         const subscription = await GetSubscription(res.created_by.email);
         setIsSubscribed(subscription);
       }
+      console.log("begin")
+      publicSocket.emit("begin_video", res.id, (begin: boolean) => {
+        if(!begin) return
+
+        viewTimeout.current = setInterval(PingVideo, 1000)
+      })
     } catch (error) {
       snack.error("Video não encontrado");
       navigate("/");

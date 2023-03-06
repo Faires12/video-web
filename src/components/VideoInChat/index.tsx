@@ -8,6 +8,7 @@ import { GetVideoEvaluation, PostVideoEvaluation } from "../../services/evaluati
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 
+
 interface Props {
   video: VideoData;
   setEvaluation(e: boolean | null, likesCount?: number, deslikesCount?: number): void
@@ -34,7 +35,7 @@ export const VideoInChat = ({ video, setEvaluation }: Props) => {
   const handleChangeEvaluation = async (e: boolean) => {
     try {
       const res = await PostVideoEvaluation(video.id, e)
-      setEvaluation(e, res.likesCount, res.deslikesCount)
+      setEvaluation(res.evaluation ?? null, res.likesCount, res.deslikesCount)
     } catch (error) {
       
     }
